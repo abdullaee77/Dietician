@@ -1,4 +1,5 @@
 'use client'
+import Spinner from '@/components/Spinner'
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
@@ -88,13 +89,10 @@ export default function PeriodPage() {
     ranges.push({ start: rangeStart, end: format(prevDate, 'yyyy-MM-dd') })
   }
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-[#0f0f0f]">
-        <p className="text-zinc-500">Loading...</p>
-      </div>
-    )
-  }
+
+if (loading) {
+  return <Spinner label="Loading period history..." />
+}
 
   const inputCls = "w-full px-3 py-2 rounded-xl border border-zinc-700 bg-zinc-800 text-zinc-200 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 transition"
 

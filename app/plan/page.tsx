@@ -1,5 +1,5 @@
 'use client'
-
+import Spinner from '@/components/Spinner'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 
@@ -55,13 +55,9 @@ export default function PlanPage() {
     setTimeout(() => setSaved(false), 2000)
   }
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-[#0f0f0f]">
-        <p className="text-zinc-500">Loading your plan...</p>
-      </div>
-    )
-  }
+if (loading) {
+  return <Spinner label="Loading your plan..." />
+}
 
   const inputCls = "w-full px-3 py-2 rounded-xl border border-zinc-700 bg-zinc-800 text-zinc-200 text-sm placeholder-zinc-600 focus:outline-none focus:ring-2 focus:ring-rose-500 transition"
 

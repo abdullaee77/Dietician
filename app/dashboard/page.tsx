@@ -1,4 +1,5 @@
 'use client'
+import Spinner from '@/components/Spinner'
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
@@ -46,13 +47,9 @@ setStreakData(raw.slice(-14).map((d: any) => ({
     })
   }, [router])
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-[#0f0f0f]">
-        <p className="text-zinc-500">Loading...</p>
-      </div>
-    )
-  }
+if (loading) {
+  return <Spinner label="Loading your dashboard..." />
+}
 
   const dayNumber = user ? getDayNumber(user.created_at) : 1
   const latestWeight = progress?.weights?.slice(-1)[0]?.weight_kg
@@ -100,22 +97,25 @@ tickerMessages.push("🩸 Mark your period days on time to keep proper track")
         <RunningTicker messages={tickerMessages} />
 
         {/* Stats */}
-        <div className="grid grid-cols-3 gap-3">
-          <div className="bg-zinc-900 rounded-2xl p-4 border border-zinc-800 text-center">
-            <p className="text-2xl font-bold text-orange-400">{progress?.streak ?? 0}</p>
-            <p className="text-xs text-zinc-500 mt-1">🔥 Streak</p>
-          </div>
-          <div className="bg-zinc-900 rounded-2xl p-4 border border-zinc-800 text-center">
-            <p className="text-2xl font-bold text-rose-400">{progress?.totalDays ?? 0}</p>
-            <p className="text-xs text-zinc-500 mt-1">📅 Days</p>
-          </div>
-          <div className="bg-zinc-900 rounded-2xl p-4 border border-zinc-800 text-center">
-            <p className="text-2xl font-bold text-purple-400">
-              {latestWeight ? `${latestWeight}kg` : '—'}
-            </p>
-            <p className="text-xs text-zinc-500 mt-1">⚖️ Weight</p>
-          </div>
-        </div>
+       <div className="grid grid-cols-3 gap-2">
+  <div className="bg-zinc-900 rounded-2xl p-3 border border-zinc-800 text-center min-w-0">
+    <p className="text-lg sm:text-2xl font-bold text-orange-400 truncate">{progress?.streak ?? 0}</p>
+    <p className="text-[10px] sm:text-xs text-zinc-500 mt-1 truncate">🔥 Streak</p>
+  </div>
+  <div className="bg-zinc-900 rounded-2xl p-3 border border-zinc-800 text-center min-w-0">
+    <p className="text-lg sm:text-2xl font-bold text-rose-400 truncate">{progress?.totalDays ?? 0}</p>
+    <p className="text-[10px] sm:text-xs text-zinc-500 mt-1 truncate">📅 Days</p>
+  </div>
+ <div className="bg-zinc-900 rounded-2xl p-3 border border-zinc-800 text-center min-w-0 overflow-hidden">
+  <p
+    className="font-bold text-purple-400 whitespace-nowrap"
+    style={{ fontSize: 'clamp(0.75rem, 4vw, 1.25rem)' }}
+  >
+    {latestWeight ? `${latestWeight}kg` : '—'}
+  </p>
+  <p className="text-[10px] sm:text-xs text-zinc-500 mt-1 truncate">⚖️ Weight</p>
+</div>
+</div>
 
         {/* Streak graph */}
       

@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { getDayNumber, shouldShowWeight} from '@/lib/utils'
 import WaterTracker from '@/components/WaterTracker'
 import MealCard from '@/components/MealCard'
+import Spinner from '@/components/Spinner'
 
 interface ExtraMeal {
   id: string; label: string; food: string; time: string; skipped: boolean
@@ -246,13 +247,9 @@ async function handleSave() {
   }
 }
 
-  if (!user) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-[#0f0f0f]">
-        <p className="text-zinc-500">Loading your day...</p>
-      </div>
-    )
-  }
+if (!user) {
+  return <Spinner label="Loading your day..." />
+}
 
   return (
     <div className="min-h-screen bg-[#0f0f0f] pb-24">

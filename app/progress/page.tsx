@@ -1,4 +1,5 @@
 'use client'
+import Spinner from '@/components/Spinner'
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
@@ -73,14 +74,9 @@ export default function ProgressPage() {
     }
   }
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-[#0f0f0f]">
-        <p className="text-zinc-500">Loading...</p>
-      </div>
-    )
-  }
-
+if (loading) {
+  return <Spinner label="Loading your progress..." />
+}
   const weightData = (data.weights ?? []).map((w: any) => ({
     date: format(parseISO(w.date), 'MMM d'),
     rawDate: w.date,
