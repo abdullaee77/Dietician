@@ -19,61 +19,96 @@ export async function GET() {
     [userId]
   )
 
-  // Streak — consecutive completed days
+  const periodDays = await query(
+    `SELECT date FROM period_logs WHERE user_id = $1`,
+    [userId]
+  )
+
   const logs = await query(
-    `SELECT date, completed, water_glasses, steps FROM daily_logs
+    `SELECT date, completed, water_glasses, steps,
+            breakfast_time, lunch_time, dinner_time, snack_time,
+            sleep_time, wake_time, sleep_hours,
+            breakfast_skipped, lunch_skipped, dinner_skipped,
+            extra_meals
+     FROM daily_logs
      WHERE user_id = $1 ORDER BY date DESC`,
     [userId]
   )
 
-  let streak = 0
+  // Streaks
   const today = new Date()
   today.setHours(0, 0, 0, 0)
 
-  for (let i = 0; i < logs.length; i++) {
-    const logDate = new Date(logs[i].date)
-    logDate.setHours(0, 0, 0, 0)
-    const diffDays = Math.round((today.getTime() - logDate.getTime()) / 86400000)
-
-    if (diffDays === i && logs[i].completed) {
-      streak++
-    } else {
-      break
-    }
-  }
-
-  // Water goal streak (8 glasses)
+  let streak = 0
   let waterStreak = 0
+  let stepsStreak = 0
+
   for (let i = 0; i < logs.length; i++) {
     const logDate = new Date(logs[i].date)
     logDate.setHours(0, 0, 0, 0)
-    const diffDays = Math.round((today.getTime() - logDate.getTime()) / 86400000)
-    if (diffDays === i && logs[i].water_glasses >= 8) {
-      waterStreak++
-    } else {
-      break
-    }
+    const diff = Math.round((today.getTime() - logDate.getTime()) / 86400000)
+    if (diff === i) {
+      if (logs[i].completed) streak++
+      else break
+    } else break
   }
 
-  // Steps goal streak (8000 steps)
-  let stepsStreak = 0
   for (let i = 0; i < logs.length; i++) {
     const logDate = new Date(logs[i].date)
     logDate.setHours(0, 0, 0, 0)
-    const diffDays = Math.round((today.getTime() - logDate.getTime()) / 86400000)
-    if (diffDays === i && logs[i].steps >= 8000) {
-      stepsStreak++
-    } else {
-      break
-    }
+    const diff = Math.round((today.getTime() - logDate.getTime()) / 86400000)
+    if (diff === i && logs[i].water_glasses >= 8) waterStreak++
+    else break
   }
+
+  for (let i = 0; i < logs.length; i++) {
+    const logDate = new Date(logs[i].date)
+    logDate.setHours(0, 0, 0, 0)
+    const diff = Math.round((today.getTime() - logDate.getTime()) / 86400000)
+    if (diff === i && logs[i].steps >= 8000) stepsStreak++
+    else break
+  }
+
+  // Water chart data
+  const waterData = logs.slice().reverse().map((l: any) => ({
+    date: l.date,
+    glasses: l.water_glasses ?? 0,
+  }))
+
+  // Meal times chart
+  const mealTimesData = logs.slice().reverse().map((l: any) => ({
+    date: l.date,
+    breakfast: l.breakfast_skipped ? null : l.breakfast_time,
+    lunch: l.lunch_skipped ? null : l.lunch_time,
+    dinner: l.dinner_skipped ? null : l.dinner_time,
+  }))
+
+  // Sleep chart
+  const sleepData = logs.slice().reverse().map((l: any) => ({
+    date: l.date,
+    hours: l.sleep_hours ? Number(l.sleep_hours) : 0,
+    sleep_time: l.sleep_time,
+    wake_time: l.wake_time,
+  }))
+
+  // Submit streak calendar (last 30 days)
+  const submitData = logs.slice(0, 30).reverse().map((l: any) => ({
+    date: l.date,
+    completed: l.completed,
+  }))
 
   return NextResponse.json({
     weights,
     measurements,
+    periodDays: periodDays.map((r: any) => r.date),
     streak,
     waterStreak,
     stepsStreak,
     totalDays: logs.length,
+    waterData,
+    mealTimesData,
+    sleepData,
+    submitData,
+    logs,
   })
 }

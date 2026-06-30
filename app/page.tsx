@@ -4,12 +4,19 @@ import { query } from '@/lib/db'
 
 export default async function RootPage() {
   const cookieStore = await cookies()
+  const authed = cookieStore.get('auth')?.value
   const userId = cookieStore.get('user_id')?.value
 
-  if (!userId) redirect('/setup')
+  if (authed === 'true' && userId) {
+    const rows = await query(
+      'SELECT id, initial_weight_logged FROM users WHERE id = $1',
+      [userId]
+    )
+    if (rows.length > 0) {
+      if (!rows[0].initial_weight_logged) redirect('/initial-weight')
+      redirect('/dashboard')
+    }
+  }
 
-  const rows = await query('SELECT id FROM users WHERE id = $1', [userId])
-  if (rows.length === 0) redirect('/setup')
-
-  redirect('/home')
+  redirect('/welcome')
 }

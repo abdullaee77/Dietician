@@ -8,12 +8,12 @@ export function getDayNumber(createdAt: string | Date): number {
   return differenceInCalendarDays(now, created) + 1
 }
 
-export function shouldShowWeight(dayNumber: number): boolean {
-  return dayNumber % 3 === 0
+export function shouldShowWeight(dayNumber: number, intervalDays: number = 3): boolean {
+  return dayNumber % intervalDays === 0
 }
 
-export function shouldShowMeasurements(dayNumber: number): boolean {
-  return dayNumber % 7 === 0
+export function shouldShowMeasurements(dayNumber: number, intervalDays: number = 7): boolean {
+  return dayNumber % intervalDays === 0
 }
 
 export function todayISO(): string {

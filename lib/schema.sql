@@ -56,16 +56,6 @@ CREATE TABLE IF NOT EXISTS weight_logs (
   UNIQUE(user_id, date)
 );
 
--- Body measurements (every 7 days)
-CREATE TABLE IF NOT EXISTS measurements (
-  id          SERIAL PRIMARY KEY,
-  user_id     INTEGER REFERENCES users(id),
-  date        DATE NOT NULL DEFAULT CURRENT_DATE,
-  waist_cm    NUMERIC(5,1),
-  hips_cm     NUMERIC(5,1),
-  arms_cm     NUMERIC(5,1),
-  UNIQUE(user_id, date)
-);
 
 -- Period logs (monthly)
 CREATE TABLE IF NOT EXISTS period_logs (
@@ -103,3 +93,39 @@ CREATE TABLE IF NOT EXISTS must_eat_foods (
 INSERT INTO trainer_plan (exercise_desc, exercise_mins, sleep_hours, daily_quote)
 SELECT 'Walk or light cardio', 30, 8, 'Every day is a fresh start.'
 WHERE NOT EXISTS (SELECT 1 FROM trainer_plan);
+
+-- Add period logs table if not exists already
+CREATE TABLE IF NOT EXISTS period_logs (
+  id        SERIAL PRIMARY KEY,
+  user_id   INTEGER REFERENCES users(id),
+  date      DATE NOT NULL,
+  UNIQUE(user_id, date)
+);
+
+-- Add extra meals support to daily_logs
+ALTER TABLE daily_logs ADD COLUMN IF NOT EXISTS extra_meals JSONB DEFAULT '[]';
+ALTER TABLE daily_logs ADD COLUMN IF NOT EXISTS breakfast_skipped BOOLEAN DEFAULT FALSE;
+ALTER TABLE daily_logs ADD COLUMN IF NOT EXISTS lunch_skipped BOOLEAN DEFAULT FALSE;
+ALTER TABLE daily_logs ADD COLUMN IF NOT EXISTS dinner_skipped BOOLEAN DEFAULT FALSE;
+
+-- Track daily food compliance
+CREATE TABLE IF NOT EXISTS daily_food_log (
+  id            SERIAL PRIMARY KEY,
+  user_id       INTEGER REFERENCES users(id),
+  date          DATE NOT NULL DEFAULT CURRENT_DATE,
+  food_name     VARCHAR(100) NOT NULL,
+  food_type     VARCHAR(10) NOT NULL, -- 'skip' or 'must'
+  complied      BOOLEAN NOT NULL DEFAULT FALSE,
+  UNIQUE(user_id, date, food_name, food_type)
+);
+
+-- Streak history for dashboard graph
+CREATE TABLE IF NOT EXISTS streak_logs (
+  id        SERIAL PRIMARY KEY,
+  user_id   INTEGER REFERENCES users(id),
+  date      DATE NOT NULL DEFAULT CURRENT_DATE,
+  completed BOOLEAN DEFAULT FALSE,
+  UNIQUE(user_id, date)
+);
+
+ALTER TABLE trainer_plan ADD COLUMN IF NOT EXISTS pin VARCHAR(20);

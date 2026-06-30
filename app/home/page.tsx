@@ -1,16 +1,22 @@
 'use client'
-
+import FoodCheckCard from '@/components/FoodCheckCard'
+import SleepTimePicker from '@/components/SleepTimePicker'
 import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { getDayNumber, shouldShowWeight, shouldShowMeasurements } from '@/lib/utils'
 import WaterTracker from '@/components/WaterTracker'
 import MealCard from '@/components/MealCard'
 
+interface ExtraMeal {
+  id: string; label: string; food: string; time: string; skipped: boolean
+}
+
 interface DailyLog {
-  breakfast_food: string; breakfast_time: string
-  lunch_food: string; lunch_time: string
-  dinner_food: string; dinner_time: string
+  breakfast_food: string; breakfast_time: string; breakfast_skipped: boolean
+  lunch_food: string; lunch_time: string; lunch_skipped: boolean
+  dinner_food: string; dinner_time: string; dinner_skipped: boolean
   snack_food: string; snack_time: string
+  extra_meals: ExtraMeal[]
   water_glasses: number; steps: string
   exercise_desc: string; exercise_mins: string
   sleep_time: string; wake_time: string; sleep_hours: string
@@ -18,20 +24,12 @@ interface DailyLog {
   flex_meal: string; completed: boolean
 }
 
-interface Plan {
-  exercise_desc: string; exercise_mins: number
-  sleep_hours: number; daily_quote: string
-}
-
-interface User {
-  id: number; name: string; created_at: string
-}
-
 const emptyLog: DailyLog = {
-  breakfast_food: '', breakfast_time: '',
-  lunch_food: '', lunch_time: '',
-  dinner_food: '', dinner_time: '',
+  breakfast_food: '', breakfast_time: '', breakfast_skipped: false,
+  lunch_food: '', lunch_time: '', lunch_skipped: false,
+  dinner_food: '', dinner_time: '', dinner_skipped: false,
   snack_food: '', snack_time: '',
+  extra_meals: [],
   water_glasses: 0, steps: '',
   exercise_desc: '', exercise_mins: '',
   sleep_time: '', wake_time: '', sleep_hours: '',
@@ -41,10 +39,24 @@ const emptyLog: DailyLog = {
 
 const inputCls = "w-full px-3 py-2 rounded-xl border border-zinc-700 bg-zinc-800 text-zinc-200 text-sm placeholder-zinc-600 focus:outline-none focus:ring-2 focus:ring-rose-500 transition"
 
+function validate(log: DailyLog): string[] {
+  const errors: string[] = []
+  if (!log.breakfast_skipped && !log.breakfast_food.trim()) errors.push('Breakfast food')
+  if (!log.lunch_skipped && !log.lunch_food.trim()) errors.push('Lunch food')
+  if (!log.dinner_skipped && !log.dinner_food.trim()) errors.push('Dinner food')
+  if (log.water_glasses === 0) errors.push('Water intake')
+  if (!log.steps) errors.push('Steps')
+  if (!log.exercise_desc.trim()) errors.push('Exercise')
+  if (!log.sleep_hours) errors.push('Sleep hours')
+  if (!log.energy_level) errors.push('Energy level')
+  if (log.bloating === null) errors.push('Bloating')
+  return errors
+}
+
 export default function HomePage() {
-  const [user, setUser] = useState<User | null>(null)
+  const [user, setUser] = useState<any>(null)
   const [log, setLog] = useState<DailyLog>(emptyLog)
-  const [plan, setPlan] = useState<Plan | null>(null)
+  const [plan, setPlan] = useState<any>(null)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [dayNumber, setDayNumber] = useState(1)
@@ -54,15 +66,29 @@ export default function HomePage() {
   const [waist, setWaist] = useState('')
   const [hips, setHips] = useState('')
   const [arms, setArms] = useState('')
+  const [errors, setErrors] = useState<string[]>([])
+  const [showErrors, setShowErrors] = useState(false)
+
+  // New Compliance States
+  const [skipFoods, setSkipFoods] = useState<any[]>([])
+  const [mustEatFoods, setMustEatFoods] = useState<any[]>([])
+  const [foodLog, setFoodLog] = useState<any[]>([])
+
   const router = useRouter()
 
   useEffect(() => {
     fetch('/api/daily-log')
-      .then(r => { if (r.status === 401) { router.push('/setup'); return null } return r.json() })
+      .then(r => {
+        if (r.status === 401) { router.push('/login'); return null }
+        return r.json()
+      })
       .then(data => {
         if (!data) return
         setUser(data.user)
         setPlan(data.plan)
+        setSkipFoods(data.skipFoods ?? [])
+        setMustEatFoods(data.mustEatFoods ?? [])
+
         if (data.log) {
           setLog({
             ...emptyLog, ...data.log,
@@ -70,13 +96,22 @@ export default function HomePage() {
             steps: data.log.steps ?? '',
             exercise_mins: data.log.exercise_mins ?? '',
             sleep_hours: data.log.sleep_hours ?? '',
+            extra_meals: data.log.extra_meals ?? [],
+            breakfast_skipped: data.log.breakfast_skipped ?? false,
+            lunch_skipped: data.log.lunch_skipped ?? false,
+            dinner_skipped: data.log.dinner_skipped ?? false,
           })
         }
-        const dn = getDayNumber(data.user.created_at)
-        setDayNumber(dn)
-        setShowWeight(shouldShowWeight(dn))
-        setShowMeasurements(shouldShowMeasurements(dn))
+   const dn = getDayNumber(data.user.created_at)
+setDayNumber(dn)
+setShowWeight(shouldShowWeight(dn, data.plan?.weight_interval_days ?? 3))
+setShowMeasurements(shouldShowMeasurements(dn, data.plan?.measurement_interval_days ?? 7))
       })
+
+    // Fetch food log compliance separately
+    fetch('/api/food-log')
+      .then(r => r.json())
+      .then(d => setFoodLog(d.foodLog ?? []))
   }, [router])
 
   const updateLog = (field: keyof DailyLog, value: any) =>
@@ -91,13 +126,67 @@ export default function HomePage() {
     })
   }, [])
 
+  function addExtraMeal() {
+    const id = Date.now().toString()
+    setLog(prev => ({
+      ...prev,
+      extra_meals: [...prev.extra_meals, {
+        id, label: `Extra Meal ${prev.extra_meals.length + 1}`,
+        food: '', time: '', skipped: false
+      }]
+    }))
+  }
+
+  function updateExtraMeal(id: string, field: keyof ExtraMeal, value: any) {
+    setLog(prev => ({
+      ...prev,
+      extra_meals: prev.extra_meals.map(m => m.id === id ? { ...m, [field]: value } : m)
+    }))
+  }
+
+  function removeExtraMeal(id: string) {
+    setLog(prev => ({
+      ...prev,
+      extra_meals: prev.extra_meals.filter(m => m.id !== id)
+    }))
+  }
+
+  // Compliance Handlers
+  function getFoodCompliance(name: string, type: string) {
+    const entry = foodLog.find(f => f.food_name === name && f.food_type === type)
+    return entry?.complied ?? null
+  }
+
+  async function toggleFoodCompliance(name: string, type: string, complied: boolean) {
+    setFoodLog(prev => {
+      const existing = prev.findIndex(f => f.food_name === name && f.food_type === type)
+      if (existing >= 0) {
+        return prev.map((f, i) => i === existing ? { ...f, complied } : f)
+      }
+      return [...prev, { food_name: name, food_type: type, complied }]
+    })
+    await fetch('/api/food-log', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ food_name: name, food_type: type, complied }),
+    })
+  }
+
   async function handleSave() {
+    const errs = validate(log)
+    if (errs.length > 0) {
+      setErrors(errs)
+      setShowErrors(true)
+      return
+    }
+
     setSaving(true)
     await fetch('/api/daily-log', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ ...log, completed: true }),
     })
+
     if (showWeight && weight) {
       await fetch('/api/weight', {
         method: 'POST',
@@ -105,6 +194,7 @@ export default function HomePage() {
         body: JSON.stringify({ weight_kg: parseFloat(weight) }),
       })
     }
+
     if (showMeasurements) {
       await fetch('/api/measurements', {
         method: 'POST',
@@ -116,9 +206,11 @@ export default function HomePage() {
         }),
       })
     }
+
     setSaving(false)
     setSaved(true)
-    setTimeout(() => setSaved(false), 3000)
+    setShowErrors(false)
+    setTimeout(() => { setSaved(false); router.push('/dashboard') }, 1500)
   }
 
   if (!user) {
@@ -136,13 +228,12 @@ export default function HomePage() {
       <div className="bg-zinc-900 border-b border-zinc-800 px-6 py-4 sticky top-0 z-10">
         <div className="max-w-lg mx-auto flex items-center justify-between">
           <div>
-            <p className="text-xs text-zinc-500">Day {dayNumber} of your journey</p>
-            <h1 className="text-xl font-bold text-white">Hi, {user.name} 🌸</h1>
+            <p className="text-xs text-zinc-500">Day {dayNumber}</p>
+            <h1 className="text-lg font-bold text-white">Today's Log</h1>
           </div>
-          <div className="flex gap-4 text-sm">
-            <button onClick={() => router.push('/progress')} className="text-rose-400 font-medium">Progress</button>
-            <button onClick={() => router.push('/plan')} className="text-rose-400 font-medium">My Plan</button>
-          </div>
+          <button onClick={() => router.push('/dashboard')} className="text-rose-400 text-sm font-medium">
+            ← Back
+          </button>
         </div>
       </div>
 
@@ -164,7 +255,7 @@ export default function HomePage() {
         )}
         {showMeasurements && (
           <div className="bg-purple-500/10 border border-purple-500/20 rounded-2xl p-3 text-center">
-            <p className="text-purple-400 font-medium text-sm">📏 Measurement morning! Log your measurements below.</p>
+            <p className="text-purple-400 font-medium text-sm">📏 Measurement morning!</p>
           </div>
         )}
 
@@ -174,34 +265,69 @@ export default function HomePage() {
           <div className="space-y-3">
             <MealCard label="Breakfast" emoji="🍳"
               food={log.breakfast_food} time={log.breakfast_time}
+              skipped={log.breakfast_skipped}
               onFoodChange={v => updateLog('breakfast_food', v)}
-              onTimeChange={v => updateLog('breakfast_time', v)} />
+              onTimeChange={v => updateLog('breakfast_time', v)}
+              onSkipChange={v => updateLog('breakfast_skipped', v)} />
+
             <MealCard label="Lunch" emoji="🥗"
               food={log.lunch_food} time={log.lunch_time}
+              skipped={log.lunch_skipped}
               onFoodChange={v => updateLog('lunch_food', v)}
-              onTimeChange={v => updateLog('lunch_time', v)} />
+              onTimeChange={v => updateLog('lunch_time', v)}
+              onSkipChange={v => updateLog('lunch_skipped', v)} />
+
             <MealCard label="Dinner" emoji="🍽️"
               food={log.dinner_food} time={log.dinner_time}
+              skipped={log.dinner_skipped}
               onFoodChange={v => updateLog('dinner_food', v)}
-              onTimeChange={v => updateLog('dinner_time', v)} />
-            <MealCard label="Snacks" emoji="🍎"
-              food={log.snack_food} time={log.snack_time}
-              onFoodChange={v => updateLog('snack_food', v)}
-              onTimeChange={v => updateLog('snack_time', v)} />
+              onTimeChange={v => updateLog('dinner_time', v)}
+              onSkipChange={v => updateLog('dinner_skipped', v)} />
+
+            {/* Extra meals */}
+            {log.extra_meals.map(meal => (
+              <MealCard
+                key={meal.id}
+                label={meal.label}
+                emoji="🍴"
+                food={meal.food}
+                time={meal.time}
+                skipped={meal.skipped}
+                isExtra
+                onFoodChange={v => updateExtraMeal(meal.id, 'food', v)}
+                onTimeChange={v => updateExtraMeal(meal.id, 'time', v)}
+                onSkipChange={v => updateExtraMeal(meal.id, 'skipped', v)}
+                onRemove={() => removeExtraMeal(meal.id)}
+              />
+            ))}
+
+            {/* Add meal / snack buttons */}
+            <div className="flex gap-2">
+              <button
+                onClick={addExtraMeal}
+                className="flex-1 py-3 rounded-2xl border border-dashed border-zinc-700 text-zinc-500 text-sm font-medium hover:border-rose-500/50 hover:text-rose-400 transition active:scale-95"
+              >
+                + Add Meal
+              </button>
+              <button
+                onClick={() => setLog(prev => ({
+                  ...prev,
+                  extra_meals: [...prev.extra_meals, {
+                    id: Date.now().toString(),
+                    label: 'Snack', food: '', time: '', skipped: false
+                  }]
+                }))}
+                className="flex-1 py-3 rounded-2xl border border-dashed border-zinc-700 text-zinc-500 text-sm font-medium hover:border-rose-500/50 hover:text-rose-400 transition active:scale-95"
+              >
+                + Add Snack
+              </button>
+            </div>
           </div>
         </div>
 
         {/* Water */}
         <WaterTracker glasses={log.water_glasses} onChange={handleWaterChange} />
 
-        {/* Steps */}
-        <div className="bg-zinc-900 rounded-2xl p-4 border border-zinc-800">
-          <h3 className="font-semibold text-white mb-3">👟 Steps</h3>
-          <input type="number" value={log.steps}
-            onChange={e => updateLog('steps', e.target.value)}
-            placeholder="How many steps today?"
-            className={inputCls} />
-        </div>
 
         {/* Exercise */}
         <div className="bg-zinc-900 rounded-2xl p-4 border border-zinc-800">
@@ -215,7 +341,7 @@ export default function HomePage() {
           </div>
           <textarea value={log.exercise_desc}
             onChange={e => updateLog('exercise_desc', e.target.value)}
-            placeholder="What did you do? (e.g. 30 min walk)"
+            placeholder="What did you do?"
             rows={2}
             className={`${inputCls} resize-none mb-2`} />
           <input type="number" value={log.exercise_mins}
@@ -232,63 +358,33 @@ export default function HomePage() {
               <span className="text-xs text-rose-400">Target: {plan.sleep_hours}h</span>
             )}
           </div>
-          <div className="grid grid-cols-2 gap-3 mb-2">
-            <div>
-              <label className="text-xs text-zinc-500 mb-1 block">Slept at</label>
-              <input type="time" value={log.sleep_time}
-                onChange={e => updateLog('sleep_time', e.target.value)}
-                className={inputCls} />
-            </div>
-            <div>
-              <label className="text-xs text-zinc-500 mb-1 block">Woke at</label>
-              <input type="time" value={log.wake_time}
-                onChange={e => updateLog('wake_time', e.target.value)}
-                className={inputCls} />
-            </div>
+          <div className="grid grid-cols-2 gap-4 mb-3">
+            <SleepTimePicker
+              label="Slept at"
+              value={log.sleep_time}
+              onChange={v => updateLog('sleep_time', v)}
+            />
+            <SleepTimePicker
+              label="Woke at"
+              value={log.wake_time}
+              onChange={v => updateLog('wake_time', v)}
+            />
           </div>
-          <input type="number" step="0.5" value={log.sleep_hours}
+          <input
+            type="number" step="0.5"
+            value={log.sleep_hours}
             onChange={e => updateLog('sleep_hours', e.target.value)}
             placeholder="Total hours slept"
-            className={inputCls} />
+            className={inputCls}
+          />
         </div>
 
-        {/* Energy + Bloating */}
-        <div className="bg-zinc-900 rounded-2xl p-4 border border-zinc-800">
-          <h3 className="font-semibold text-white mb-3">✨ How are you feeling?</h3>
-          <p className="text-sm text-zinc-500 mb-2">Energy level</p>
-          <div className="flex gap-2 mb-4">
-            {['low', 'medium', 'high'].map(level => (
-              <button key={level}
-                onClick={() => updateLog('energy_level', level)}
-                className={`flex-1 py-2 rounded-xl text-sm font-medium capitalize transition active:scale-95 ${
-                  log.energy_level === level
-                    ? 'bg-rose-500 text-white'
-                    : 'bg-zinc-800 text-zinc-400 border border-zinc-700'
-                }`}>
-                {level === 'low' ? '😓' : level === 'medium' ? '😊' : '⚡'} {level}
-              </button>
-            ))}
-          </div>
-          <p className="text-sm text-zinc-500 mb-2">Bloating?</p>
-          <div className="flex gap-2">
-            {[true, false].map(val => (
-              <button key={String(val)}
-                onClick={() => updateLog('bloating', val)}
-                className={`flex-1 py-2 rounded-xl text-sm font-medium transition active:scale-95 ${
-                  log.bloating === val
-                    ? 'bg-rose-500 text-white'
-                    : 'bg-zinc-800 text-zinc-400 border border-zinc-700'
-                }`}>
-                {val ? 'Yes' : 'No'}
-              </button>
-            ))}
-          </div>
-        </div>
+     
 
         {/* Flex meal */}
         <div className="bg-zinc-900 rounded-2xl p-4 border border-zinc-800">
           <h3 className="font-semibold text-white mb-1">🍕 Flex Meal</h3>
-          <p className="text-xs text-zinc-500 mb-2">Ate something off plan? Log it honestly — no judgment here 💛</p>
+          <p className="text-xs text-zinc-500 mb-2">Ate something off plan? No judgment 💛</p>
           <textarea value={log.flex_meal}
             onChange={e => updateLog('flex_meal', e.target.value)}
             placeholder="What was it? (optional)"
@@ -326,6 +422,29 @@ export default function HomePage() {
                 </div>
               ))}
             </div>
+          </div>
+        )}
+
+      {/* Today's Food Check */}
+<FoodCheckCard
+  skipFoods={skipFoods}
+  mustEatFoods={mustEatFoods}
+  getCompliance={getFoodCompliance}
+  onToggle={toggleFoodCompliance}
+/>
+
+        {/* Validation errors */}
+        {showErrors && errors.length > 0 && (
+          <div className="bg-red-500/10 border border-red-500/20 rounded-2xl p-4">
+            <p className="text-red-400 font-medium text-sm mb-2">Please fill in the following:</p>
+            <ul className="space-y-1">
+              {errors.map(e => (
+                <li key={e} className="text-red-300 text-sm flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-red-400 inline-block" />
+                  {e}
+                </li>
+              ))}
+            </ul>
           </div>
         )}
 
