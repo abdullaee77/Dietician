@@ -12,7 +12,7 @@ export async function POST(req: NextRequest) {
   const body = await req.json()
   const {
     exercise_desc, exercise_mins, sleep_hours, daily_quote,
-    weight_interval_days, measurement_interval_days,
+    weight_interval_days,
     skipFoods, mustEatFoods
   } = body
 
@@ -21,12 +21,12 @@ export async function POST(req: NextRequest) {
       `UPDATE trainer_plan SET
         exercise_desc=$1, exercise_mins=$2,
         sleep_hours=$3, daily_quote=$4,
-        weight_interval_days=$5, measurement_interval_days=$6,
+        weight_interval_days=$5,
         updated_at=NOW()
        WHERE id=(SELECT id FROM trainer_plan ORDER BY id LIMIT 1)`,
       [
         exercise_desc, exercise_mins, sleep_hours, daily_quote,
-        weight_interval_days ?? 3, measurement_interval_days ?? 7
+        weight_interval_days ?? 3
       ]
     )
   }

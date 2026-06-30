@@ -37,7 +37,7 @@ export default function ResetPage() {
           <div className="text-5xl mb-4">⚠️</div>
           <h1 className="text-2xl font-bold text-white">Reset Everything</h1>
           <p className="text-zinc-500 mt-2 text-sm">
-            This will permanently delete all data — user, logs, weight, measurements, everything.
+            This will permanently delete all data — user, logs, weight, everything.
             This cannot be undone.
           </p>
         </div>

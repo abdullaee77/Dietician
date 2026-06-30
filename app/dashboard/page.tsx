@@ -35,12 +35,12 @@ export default function DashboardPage() {
       setPlan(planData.plan)
       setPeriodDays(periodData.periodDays ?? [])
 
-      const raw = streakRes.streakData ?? []
-      setStreakData(raw.slice(-14).map((d: any) => ({
-        date: format(parseISO(d.date), 'MMM d'),
-        value: d.completed ? 1 : 0,
-        completed: d.completed,
-      })))
+    const raw = streakRes.streakData ?? []
+setStreakData(raw.slice(-14).map((d: any) => ({
+  date: format(parseISO(d.date), 'MMM d'),
+  displayValue: d.completed ? 1 : 0.15,
+  completed: d.completed,
+})))
 
       setLoading(false)
     })
@@ -118,36 +118,52 @@ tickerMessages.push("🩸 Mark your period days on time to keep proper track")
         </div>
 
         {/* Streak graph */}
-        {streakData.length > 0 && (
-          <div className="bg-zinc-900 rounded-2xl p-4 border border-zinc-800">
-            <h2 className="font-semibold text-white mb-1">🔥 Daily Submit Streak</h2>
-            <p className="text-xs text-zinc-500 mb-3">Last 14 days</p>
-            <ResponsiveContainer width="100%" height={100}>
-              <BarChart data={streakData} barSize={16}>
-                <XAxis dataKey="date" tick={{ fontSize: 9, fill: '#71717a' }} axisLine={false} tickLine={false} />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: '#18181b',
-                    border: '1px solid #3f3f46',
-                    borderRadius: '10px',
-                    color: '#f4f4f5',
-                    fontSize: 11,
-                  }}
-                  formatter={() => ['']}
-                  labelFormatter={(label, payload) =>
-                    payload?.[0]?.payload?.completed ? `${label} ✅` : `${label} ✗`
-                  }
-                />
-                <Bar dataKey="value" radius={[4, 4, 0, 0]}>
-                  {streakData.map((entry, i) => (
-                    <Cell key={i} fill={entry.completed ? '#f43f5e' : '#27272a'} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        )}
-
+      
+{streakData.length > 0 && (
+  <div className="bg-zinc-900 rounded-2xl p-4 border border-zinc-800">
+    <h2 className="font-semibold text-white mb-1">🔥 Daily Submit Streak</h2>
+    <p className="text-xs text-zinc-500 mb-3">Last 14 days</p>
+    <ResponsiveContainer width="100%" height={120}>
+      <BarChart data={streakData} barSize={16}>
+        <XAxis
+          dataKey="date"
+          tick={{ fontSize: 9, fill: '#71717a' }}
+          axisLine={false}
+          tickLine={false}
+        />
+        <Tooltip
+          contentStyle={{
+            backgroundColor: '#18181b',
+            border: '1px solid #3f3f46',
+            borderRadius: '10px',
+            color: '#f4f4f5',
+            fontSize: 11,
+          }}
+          formatter={(_value: any, _name: any, props: any) =>
+            [props.payload.completed ? 'Filled ✅' : 'Missed ✗', '']
+          }
+          labelFormatter={(label) => label}
+        />
+        <Bar dataKey="displayValue" radius={[4, 4, 0, 0]}>
+          {streakData.map((entry, i) => (
+            <Cell
+              key={i}
+              fill={entry.completed ? '#f43f5e' : '#3f3f46'}
+            />
+          ))}
+        </Bar>
+      </BarChart>
+    </ResponsiveContainer>
+    <div className="flex gap-4 mt-2 text-xs text-zinc-500">
+      <span className="flex items-center gap-1">
+        <span className="w-2.5 h-2.5 rounded bg-rose-500 inline-block" /> Filled
+      </span>
+      <span className="flex items-center gap-1">
+        <span className="w-2.5 h-2.5 rounded bg-zinc-700 inline-block" /> Missed
+      </span>
+    </div>
+  </div>
+)}
         {/* Today card */}
         <div className={`rounded-2xl p-5 border ${
           todayDone ? 'bg-green-500/10 border-green-500/20' : 'bg-zinc-900 border-zinc-800'

@@ -13,11 +13,7 @@ export async function GET() {
     [userId]
   )
 
-  const measurements = await query(
-    `SELECT date, waist_cm, hips_cm, arms_cm FROM measurements
-     WHERE user_id = $1 ORDER BY date ASC`,
-    [userId]
-  )
+
 
   const periodDays = await query(
     `SELECT date FROM period_logs WHERE user_id = $1`,
@@ -99,7 +95,6 @@ export async function GET() {
 
   return NextResponse.json({
     weights,
-    measurements,
     periodDays: periodDays.map((r: any) => r.date),
     streak,
     waterStreak,

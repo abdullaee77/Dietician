@@ -18,10 +18,7 @@ export async function GET() {
     [user.id]
   )
 
-  const measurements = await query(
-    `SELECT * FROM measurements WHERE user_id = $1 ORDER BY date DESC`,
-    [user.id]
-  )
 
-  return NextResponse.json({ user, logs, weights, measurements })
+
+  return NextResponse.json({ user, logs, weights})
 }

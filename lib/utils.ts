@@ -1,21 +1,31 @@
-import { differenceInCalendarDays, startOfDay, parseISO } from 'date-fns'
+import { differenceInCalendarDays, parseISO } from 'date-fns'
 
 export function getDayNumber(createdAt: string | Date): number {
-  const created = startOfDay(
-    typeof createdAt === 'string' ? parseISO(createdAt) : createdAt
+  const created = typeof createdAt === 'string' ? parseISO(createdAt) : createdAt
+
+  // Normalize both to local YYYY-MM-DD, ignoring time/timezone entirely
+  const createdLocal = new Date(
+    created.getFullYear(),
+    created.getMonth(),
+    created.getDate()
   )
-  const now = startOfDay(new Date())
-  return differenceInCalendarDays(now, created) + 1
+  const now = new Date()
+  const nowLocal = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+
+  const diff = differenceInCalendarDays(nowLocal, createdLocal)
+  return Math.max(diff + 1, 1) // never go below Day 1
 }
 
 export function shouldShowWeight(dayNumber: number, intervalDays: number = 3): boolean {
   return dayNumber % intervalDays === 0
 }
 
-export function shouldShowMeasurements(dayNumber: number, intervalDays: number = 7): boolean {
-  return dayNumber % intervalDays === 0
-}
+
 
 export function todayISO(): string {
-  return new Date().toISOString().split('T')[0]
+  const now = new Date()
+  const year = now.getFullYear()
+  const month = String(now.getMonth() + 1).padStart(2, '0')
+  const day = String(now.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
 }

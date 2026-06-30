@@ -3,7 +3,7 @@ import FoodCheckCard from '@/components/FoodCheckCard'
 import SleepTimePicker from '@/components/SleepTimePicker'
 import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { getDayNumber, shouldShowWeight, shouldShowMeasurements } from '@/lib/utils'
+import { getDayNumber, shouldShowWeight} from '@/lib/utils'
 import WaterTracker from '@/components/WaterTracker'
 import MealCard from '@/components/MealCard'
 
@@ -45,12 +45,28 @@ function validate(log: DailyLog): string[] {
   if (!log.lunch_skipped && !log.lunch_food.trim()) errors.push('Lunch food')
   if (!log.dinner_skipped && !log.dinner_food.trim()) errors.push('Dinner food')
   if (log.water_glasses === 0) errors.push('Water intake')
-  if (!log.steps) errors.push('Steps')
   if (!log.exercise_desc.trim()) errors.push('Exercise')
   if (!log.sleep_hours) errors.push('Sleep hours')
-  if (!log.energy_level) errors.push('Energy level')
-  if (log.bloating === null) errors.push('Bloating')
   return errors
+}
+function calculateSleepHours(sleepTime: string, wakeTime: string): string {
+  if (!sleepTime || !wakeTime) return ''
+
+  const [sh, sm] = sleepTime.split(':').map(Number)
+  const [wh, wm] = wakeTime.split(':').map(Number)
+
+  let sleepMinutes = sh * 60 + sm
+  let wakeMinutes = wh * 60 + wm
+
+  // If wake time is earlier in the day than sleep time, she slept past midnight
+  if (wakeMinutes <= sleepMinutes) {
+    wakeMinutes += 24 * 60
+  }
+
+  const totalMinutes = wakeMinutes - sleepMinutes
+  const hours = totalMinutes / 60
+
+  return hours.toFixed(1)
 }
 
 export default function HomePage() {
@@ -61,11 +77,8 @@ export default function HomePage() {
   const [saved, setSaved] = useState(false)
   const [dayNumber, setDayNumber] = useState(1)
   const [showWeight, setShowWeight] = useState(false)
-  const [showMeasurements, setShowMeasurements] = useState(false)
   const [weight, setWeight] = useState('')
-  const [waist, setWaist] = useState('')
-  const [hips, setHips] = useState('')
-  const [arms, setArms] = useState('')
+
   const [errors, setErrors] = useState<string[]>([])
   const [showErrors, setShowErrors] = useState(false)
 
@@ -89,23 +102,36 @@ export default function HomePage() {
         setSkipFoods(data.skipFoods ?? [])
         setMustEatFoods(data.mustEatFoods ?? [])
 
-        if (data.log) {
-          setLog({
-            ...emptyLog, ...data.log,
-            water_glasses: data.log.water_glasses ?? 0,
-            steps: data.log.steps ?? '',
-            exercise_mins: data.log.exercise_mins ?? '',
-            sleep_hours: data.log.sleep_hours ?? '',
-            extra_meals: data.log.extra_meals ?? [],
-            breakfast_skipped: data.log.breakfast_skipped ?? false,
-            lunch_skipped: data.log.lunch_skipped ?? false,
-            dinner_skipped: data.log.dinner_skipped ?? false,
-          })
-        }
+   if (data.log) {
+  setLog({
+    ...emptyLog, ...data.log,
+    breakfast_food: data.log.breakfast_food ?? '',
+    breakfast_time: data.log.breakfast_time ?? '',
+    lunch_food: data.log.lunch_food ?? '',
+    lunch_time: data.log.lunch_time ?? '',
+    dinner_food: data.log.dinner_food ?? '',
+    dinner_time: data.log.dinner_time ?? '',
+    snack_food: data.log.snack_food ?? '',
+    snack_time: data.log.snack_time ?? '',
+    flex_meal: data.log.flex_meal ?? '',
+    sleep_time: data.log.sleep_time ?? '',
+    wake_time: data.log.wake_time ?? '',
+    exercise_desc: data.log.exercise_desc ?? '',
+    water_glasses: data.log.water_glasses ?? 0,
+    steps: data.log.steps ?? '',
+    exercise_mins: data.log.exercise_mins ?? '',
+    sleep_hours: data.log.sleep_hours ?? '',
+    extra_meals: data.log.extra_meals ?? [],
+    breakfast_skipped: data.log.breakfast_skipped ?? false,
+    lunch_skipped: data.log.lunch_skipped ?? false,
+    dinner_skipped: data.log.dinner_skipped ?? false,
+    energy_level: data.log.energy_level ?? '',
+    bloating: data.log.bloating ?? null,
+  })
+}
    const dn = getDayNumber(data.user.created_at)
 setDayNumber(dn)
 setShowWeight(shouldShowWeight(dn, data.plan?.weight_interval_days ?? 3))
-setShowMeasurements(shouldShowMeasurements(dn, data.plan?.measurement_interval_days ?? 7))
       })
 
     // Fetch food log compliance separately
@@ -172,20 +198,31 @@ setShowMeasurements(shouldShowMeasurements(dn, data.plan?.measurement_interval_d
     })
   }
 
-  async function handleSave() {
-    const errs = validate(log)
-    if (errs.length > 0) {
-      setErrors(errs)
-      setShowErrors(true)
-      return
-    }
+async function handleSave() {
+  const errs = validate(log)
+  if (errs.length > 0) {
+    setErrors(errs)
+    setShowErrors(true)
+    return
+  }
 
-    setSaving(true)
-    await fetch('/api/daily-log', {
+  setSaving(true)
+
+  try {
+    const res = await fetch('/api/daily-log', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ ...log, completed: true }),
     })
+
+    if (!res.ok) {
+      const errBody = await res.json().catch(() => ({}))
+      console.error('Save failed:', res.status, errBody)
+      setSaving(false)
+      setErrors([`Save failed (${res.status}): ${errBody.error ?? 'Unknown error'}`])
+      setShowErrors(true)
+      return
+    }
 
     if (showWeight && weight) {
       await fetch('/api/weight', {
@@ -195,23 +232,19 @@ setShowMeasurements(shouldShowMeasurements(dn, data.plan?.measurement_interval_d
       })
     }
 
-    if (showMeasurements) {
-      await fetch('/api/measurements', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          waist_cm: waist ? parseFloat(waist) : null,
-          hips_cm: hips ? parseFloat(hips) : null,
-          arms_cm: arms ? parseFloat(arms) : null,
-        }),
-      })
-    }
+  
 
     setSaving(false)
     setSaved(true)
     setShowErrors(false)
     setTimeout(() => { setSaved(false); router.push('/dashboard') }, 1500)
+  } catch (err) {
+    console.error('Save threw an exception:', err)
+    setSaving(false)
+    setErrors(['Network error — could not reach the server. Check your connection and try again.'])
+    setShowErrors(true)
   }
+}
 
   if (!user) {
     return (
@@ -253,11 +286,7 @@ setShowMeasurements(shouldShowMeasurements(dn, data.plan?.measurement_interval_d
             <p className="text-amber-400 font-medium text-sm">⚖️ Weigh-in day! Log your weight below.</p>
           </div>
         )}
-        {showMeasurements && (
-          <div className="bg-purple-500/10 border border-purple-500/20 rounded-2xl p-3 text-center">
-            <p className="text-purple-400 font-medium text-sm">📏 Measurement morning!</p>
-          </div>
-        )}
+  
 
         {/* Meals */}
         <div>
@@ -358,25 +387,30 @@ setShowMeasurements(shouldShowMeasurements(dn, data.plan?.measurement_interval_d
               <span className="text-xs text-rose-400">Target: {plan.sleep_hours}h</span>
             )}
           </div>
-          <div className="grid grid-cols-2 gap-4 mb-3">
-            <SleepTimePicker
-              label="Slept at"
-              value={log.sleep_time}
-              onChange={v => updateLog('sleep_time', v)}
-            />
-            <SleepTimePicker
-              label="Woke at"
-              value={log.wake_time}
-              onChange={v => updateLog('wake_time', v)}
-            />
-          </div>
-          <input
-            type="number" step="0.5"
-            value={log.sleep_hours}
-            onChange={e => updateLog('sleep_hours', e.target.value)}
-            placeholder="Total hours slept"
-            className={inputCls}
-          />
+         <div className="grid grid-cols-2 gap-4 mb-3">
+  <SleepTimePicker
+    label="Slept at"
+    value={log.sleep_time}
+    onChange={v => {
+      const hours = calculateSleepHours(v, log.wake_time)
+      setLog(prev => ({ ...prev, sleep_time: v, sleep_hours: hours }))
+    }}
+  />
+  <SleepTimePicker
+    label="Woke at"
+    value={log.wake_time}
+    onChange={v => {
+      const hours = calculateSleepHours(log.sleep_time, v)
+      setLog(prev => ({ ...prev, wake_time: v, sleep_hours: hours }))
+    }}
+  />
+</div>
+{log.sleep_hours && (
+  <div className="bg-zinc-800 rounded-xl px-3 py-2.5 text-center">
+    <p className="text-zinc-400 text-xs">Total sleep</p>
+    <p className="text-white text-lg font-bold">{log.sleep_hours} hours</p>
+  </div>
+)}
         </div>
 
      
@@ -403,27 +437,7 @@ setShowMeasurements(shouldShowMeasurements(dn, data.plan?.measurement_interval_d
           </div>
         )}
 
-        {/* Measurements */}
-        {showMeasurements && (
-          <div className="bg-zinc-900 rounded-2xl p-4 border border-purple-500/20">
-            <h3 className="font-semibold text-white mb-3">📏 Body Measurements</h3>
-            <div className="space-y-2">
-              {[
-                { label: 'Waist (cm)', value: waist, set: setWaist },
-                { label: 'Hips (cm)', value: hips, set: setHips },
-                { label: 'Arms (cm)', value: arms, set: setArms },
-              ].map(({ label, value, set }) => (
-                <div key={label}>
-                  <label className="text-xs text-zinc-500 mb-1 block">{label}</label>
-                  <input type="number" step="0.1" value={value}
-                    onChange={e => set(e.target.value)}
-                    placeholder={label}
-                    className={inputCls} />
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
+     
 
       {/* Today's Food Check */}
 <FoodCheckCard

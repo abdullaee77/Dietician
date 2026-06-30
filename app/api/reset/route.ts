@@ -18,7 +18,6 @@ export async function POST(req: NextRequest) {
   await query('DELETE FROM daily_food_log')
   await query('DELETE FROM streak_logs')
   await query('DELETE FROM period_logs')
-  await query('DELETE FROM measurements')
   await query('DELETE FROM weight_logs')
   await query('DELETE FROM daily_logs')
   await query('DELETE FROM users')          // <-- this removes the old PIN

@@ -11,7 +11,6 @@ export default function PlanPage() {
   const [sleepHours, setSleepHours] = useState('')
   const [quote, setQuote] = useState('')
   const [weightInterval, setWeightInterval] = useState('3')
-  const [measurementInterval, setMeasurementInterval] = useState('7')
   const [skipFoods, setSkipFoods] = useState<Food[]>([])
   const [mustEatFoods, setMustEatFoods] = useState<Food[]>([])
   const [loading, setLoading] = useState(true)
@@ -29,7 +28,6 @@ export default function PlanPage() {
           setSleepHours(String(data.plan.sleep_hours ?? ''))
           setQuote(data.plan.daily_quote ?? '')
           setWeightInterval(String(data.plan.weight_interval_days ?? 3))
-          setMeasurementInterval(String(data.plan.measurement_interval_days ?? 7))
         }
         setSkipFoods(data.skipFoods?.length ? data.skipFoods : [{ name: '', reason: '' }])
         setMustEatFoods(data.mustEatFoods?.length ? data.mustEatFoods : [{ name: '', reason: '' }])
@@ -48,7 +46,6 @@ export default function PlanPage() {
         sleep_hours: parseFloat(sleepHours) || null,
         daily_quote: quote,
         weight_interval_days: parseInt(weightInterval) || 3,
-        measurement_interval_days: parseInt(measurementInterval) || 7,
         skipFoods: skipFoods.filter(f => f.name.trim()),
         mustEatFoods: mustEatFoods.filter(f => f.name.trim()),
       }),
@@ -127,32 +124,21 @@ export default function PlanPage() {
           />
         </div>
 
-        {/* Weight / measurement intervals */}
-        <div className="bg-zinc-900 rounded-2xl p-4 border border-zinc-800">
-          <h2 className="font-semibold text-white mb-3">⚖️ Check-in Schedule</h2>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="text-xs text-zinc-500 mb-1 block">Weigh-in every (days)</label>
-              <input
-                type="number"
-                min={1}
-                value={weightInterval}
-                onChange={e => setWeightInterval(e.target.value)}
-                className={inputCls}
-              />
-            </div>
-            <div>
-              <label className="text-xs text-zinc-500 mb-1 block">Measurements every (days)</label>
-              <input
-                type="number"
-                min={1}
-                value={measurementInterval}
-                onChange={e => setMeasurementInterval(e.target.value)}
-                className={inputCls}
-              />
-            </div>
-          </div>
-        </div>
+        {/* Weight  */}
+  {/* Weight */}
+<div className="bg-zinc-900 rounded-2xl p-4 border border-zinc-800">
+  <h2 className="font-semibold text-white mb-3">⚖️ Check-in Schedule</h2>
+  <div>
+    <label className="text-xs text-zinc-500 mb-1 block">Weigh-in every (days)</label>
+    <input
+      type="number"
+      min={1}
+      value={weightInterval}
+      onChange={e => setWeightInterval(e.target.value)}
+      className={inputCls}
+    />
+  </div>
+</div>
 
         {/* Skip foods */}
         <div className="bg-zinc-900 rounded-2xl p-4 border border-red-500/20">

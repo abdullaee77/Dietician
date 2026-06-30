@@ -15,7 +15,6 @@ export async function POST(req: NextRequest) {
   await query('DELETE FROM daily_food_log')
   await query('DELETE FROM streak_logs')
   await query('DELETE FROM period_logs')
-  await query('DELETE FROM measurements')
   await query('DELETE FROM weight_logs')
   await query('DELETE FROM daily_logs')
   await query('DELETE FROM users')
@@ -30,7 +29,7 @@ export async function POST(req: NextRequest) {
   const user = rows[0]
 
   await query(
-    `INSERT INTO trainer_plan (exercise_desc, exercise_mins, sleep_hours, daily_quote, weight_interval_days, measurement_interval_days)
+    `INSERT INTO trainer_plan (exercise_desc, exercise_mins, sleep_hours, daily_quote, weight_interval_days)
      VALUES ('Walk or light cardio', 30, 8, 'Every day is a fresh start.', 3, 7)`
   )
 
