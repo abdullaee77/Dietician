@@ -35,7 +35,7 @@ CREATE TABLE IF NOT EXISTS daily_logs (
   sleep_hours     NUMERIC(4,1),
 
   -- Wellbeing
-  energy_level    VARCHAR(10),   -- 'low' | 'medium' | 'high'
+  energy_level    VARCHAR(10),
   bloating        BOOLEAN,
 
   -- Flex meal
@@ -47,7 +47,7 @@ CREATE TABLE IF NOT EXISTS daily_logs (
   UNIQUE(user_id, date)
 );
 
--- Weight logs (every 3 days)
+-- Weight logs
 CREATE TABLE IF NOT EXISTS weight_logs (
   id          SERIAL PRIMARY KEY,
   user_id     INTEGER REFERENCES users(id),
@@ -56,8 +56,7 @@ CREATE TABLE IF NOT EXISTS weight_logs (
   UNIQUE(user_id, date)
 );
 
-
--- Period logs (monthly)
+-- Period logs
 CREATE TABLE IF NOT EXISTS period_logs (
   id          SERIAL PRIMARY KEY,
   user_id     INTEGER REFERENCES users(id),
@@ -65,7 +64,7 @@ CREATE TABLE IF NOT EXISTS period_logs (
   UNIQUE(user_id, date)
 );
 
--- Trainer plan (single row, always update in place)
+-- Trainer plan (single row)
 CREATE TABLE IF NOT EXISTS trainer_plan (
   id              SERIAL PRIMARY KEY,
   exercise_desc   TEXT,
@@ -89,37 +88,18 @@ CREATE TABLE IF NOT EXISTS must_eat_foods (
   reason  TEXT NOT NULL
 );
 
--- Seed one trainer plan row if not exists
-INSERT INTO trainer_plan (exercise_desc, exercise_mins, sleep_hours, daily_quote)
-SELECT 'Walk or light cardio', 30, 8, 'Every day is a fresh start.'
-WHERE NOT EXISTS (SELECT 1 FROM trainer_plan);
-
--- Add period logs table if not exists already
-CREATE TABLE IF NOT EXISTS period_logs (
-  id        SERIAL PRIMARY KEY,
-  user_id   INTEGER REFERENCES users(id),
-  date      DATE NOT NULL,
-  UNIQUE(user_id, date)
-);
-
--- Add extra meals support to daily_logs
-ALTER TABLE daily_logs ADD COLUMN IF NOT EXISTS extra_meals JSONB DEFAULT '[]';
-ALTER TABLE daily_logs ADD COLUMN IF NOT EXISTS breakfast_skipped BOOLEAN DEFAULT FALSE;
-ALTER TABLE daily_logs ADD COLUMN IF NOT EXISTS lunch_skipped BOOLEAN DEFAULT FALSE;
-ALTER TABLE daily_logs ADD COLUMN IF NOT EXISTS dinner_skipped BOOLEAN DEFAULT FALSE;
-
--- Track daily food compliance
+-- Daily food compliance tracking
 CREATE TABLE IF NOT EXISTS daily_food_log (
   id            SERIAL PRIMARY KEY,
   user_id       INTEGER REFERENCES users(id),
   date          DATE NOT NULL DEFAULT CURRENT_DATE,
   food_name     VARCHAR(100) NOT NULL,
-  food_type     VARCHAR(10) NOT NULL, -- 'skip' or 'must'
+  food_type     VARCHAR(10) NOT NULL,
   complied      BOOLEAN NOT NULL DEFAULT FALSE,
   UNIQUE(user_id, date, food_name, food_type)
 );
 
--- Streak history for dashboard graph
+-- Streak history
 CREATE TABLE IF NOT EXISTS streak_logs (
   id        SERIAL PRIMARY KEY,
   user_id   INTEGER REFERENCES users(id),
@@ -128,4 +108,21 @@ CREATE TABLE IF NOT EXISTS streak_logs (
   UNIQUE(user_id, date)
 );
 
+-- ===== Migrations applied after initial table creation =====
+
+ALTER TABLE daily_logs ADD COLUMN IF NOT EXISTS extra_meals JSONB DEFAULT '[]';
+ALTER TABLE daily_logs ADD COLUMN IF NOT EXISTS breakfast_skipped BOOLEAN DEFAULT FALSE;
+ALTER TABLE daily_logs ADD COLUMN IF NOT EXISTS lunch_skipped BOOLEAN DEFAULT FALSE;
+ALTER TABLE daily_logs ADD COLUMN IF NOT EXISTS dinner_skipped BOOLEAN DEFAULT FALSE;
+
 ALTER TABLE trainer_plan ADD COLUMN IF NOT EXISTS pin VARCHAR(20);
+ALTER TABLE trainer_plan ADD COLUMN IF NOT EXISTS weight_interval_days INTEGER DEFAULT 3;
+ALTER TABLE trainer_plan ADD COLUMN IF NOT EXISTS measurement_interval_days INTEGER DEFAULT 7;
+
+ALTER TABLE users ADD COLUMN IF NOT EXISTS pin VARCHAR(20);
+ALTER TABLE users ADD COLUMN IF NOT EXISTS initial_weight_logged BOOLEAN DEFAULT FALSE;
+
+-- Seed default trainer plan if none exists
+INSERT INTO trainer_plan (exercise_desc, exercise_mins, sleep_hours, daily_quote, weight_interval_days, measurement_interval_days)
+SELECT 'Walk or light cardio', 30, 8, 'Every day is a fresh start.', 3, 7
+WHERE NOT EXISTS (SELECT 1 FROM trainer_plan);

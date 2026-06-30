@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
   const user = rows[0]
 
   await query(
-    `INSERT INTO trainer_plan (exercise_desc, exercise_mins, sleep_hours, daily_quote, weight_interval_days)
+    `INSERT INTO trainer_plan (exercise_desc, exercise_mins, sleep_hours, daily_quote, weight_interval_days, measurement_interval_days)
      VALUES ('Walk or light cardio', 30, 8, 'Every day is a fresh start.', 3, 7)`
   )
 
@@ -42,4 +42,29 @@ export async function POST(req: NextRequest) {
   })
 
   return NextResponse.json({ user })
+}
+
+export async function GET() {
+  const cookieStore = await cookies()
+  const userId = cookieStore.get('user_id')?.value
+
+  const users = await query('SELECT id, name, created_at FROM users LIMIT 1')
+
+  if (!userId && users.length === 0) {
+    return NextResponse.json({ user: null, needsSetup: true })
+  }
+
+  if (!userId) {
+    return NextResponse.json({ user: null, needsSetup: false })
+  }
+
+  const rows = await query(
+    'SELECT id, name, created_at FROM users WHERE id = $1',
+    [userId]
+  )
+
+  return NextResponse.json({
+    user: rows[0] ?? null,
+    needsSetup: users.length === 0
+  })
 }
