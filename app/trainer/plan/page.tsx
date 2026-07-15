@@ -84,7 +84,7 @@ export default function TrainerPlan() {
         <div className="max-w-2xl mx-auto flex items-center justify-between">
           <h1 className="text-white font-bold text-lg">✏️ Edit Plan</h1>
           <button onClick={() => router.push('/trainer/dashboard')}
-            className="text-gray-400 text-sm">← Back</button>
+            className="text-gray-400 text-sm">Back</button>
         </div>
       </div>
 

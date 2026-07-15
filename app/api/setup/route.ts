@@ -3,35 +3,42 @@ import { query } from '@/lib/db'
 import { cookies } from 'next/headers'
 
 export async function POST(req: NextRequest) {
-  const { name, pin } = await req.json()
+  const { name, username, pin } = await req.json()
 
   if (!name?.trim()) {
     return NextResponse.json({ error: 'Name required' }, { status: 400 })
+  }
+  if (!username?.trim()) {
+    return NextResponse.json({ error: 'Username required' }, { status: 400 })
   }
   if (!pin?.trim() || pin.length < 4) {
     return NextResponse.json({ error: 'PIN must be at least 4 digits' }, { status: 400 })
   }
 
-  await query('DELETE FROM daily_food_log')
-  await query('DELETE FROM streak_logs')
-  await query('DELETE FROM period_logs')
-  await query('DELETE FROM weight_logs')
-  await query('DELETE FROM daily_logs')
-  await query('DELETE FROM users')
-  await query('DELETE FROM skip_foods')
-  await query('DELETE FROM must_eat_foods')
-  await query('DELETE FROM trainer_plan')
+  // Check username is unique
+  const existing = await query(
+    'SELECT id FROM users WHERE username = $1',
+    [username.trim().toLowerCase()]
+  )
+  if (existing.length > 0) {
+    return NextResponse.json({ error: 'Username already taken — choose another' }, { status: 400 })
+  }
 
+  // Create new user — don't touch other users' data
   const rows = await query(
-    'INSERT INTO users (name, pin, initial_weight_logged) VALUES ($1, $2, FALSE) RETURNING id, name, created_at',
-    [name.trim(), pin.trim()]
+    `INSERT INTO users (name, username, pin, initial_weight_logged)
+     VALUES ($1, $2, $3, FALSE)
+     RETURNING id, name, username, created_at`,
+    [name.trim(), username.trim().toLowerCase(), pin.trim()]
   )
   const user = rows[0]
 
-  await query(
-    `INSERT INTO trainer_plan (exercise_desc, exercise_mins, sleep_hours, daily_quote, weight_interval_days, measurement_interval_days)
-     VALUES ('Walk or light cardio', 30, 8, 'Every day is a fresh start.', 3, 7)`
-  )
+  // Each user gets their own trainer plan row
+await query(
+  `INSERT INTO trainer_plan (user_id, exercise_desc, exercise_mins, sleep_hours, daily_quote, weight_interval_days, measurement_interval_days)
+   VALUES ($1, 'Walk or light cardio', 30, 8, 'Every day is a fresh start.', 3, 7)`,
+  [user.id]
+)
 
   const cookieStore = await cookies()
   cookieStore.set('user_id', String(user.id), {
@@ -48,12 +55,6 @@ export async function GET() {
   const cookieStore = await cookies()
   const userId = cookieStore.get('user_id')?.value
 
-  const users = await query('SELECT id, name, created_at FROM users LIMIT 1')
-
-  if (!userId && users.length === 0) {
-    return NextResponse.json({ user: null, needsSetup: true })
-  }
-
   if (!userId) {
     return NextResponse.json({ user: null, needsSetup: false })
   }
@@ -65,6 +66,6 @@ export async function GET() {
 
   return NextResponse.json({
     user: rows[0] ?? null,
-    needsSetup: users.length === 0
+    needsSetup: false
   })
 }

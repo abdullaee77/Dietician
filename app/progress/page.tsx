@@ -1,5 +1,4 @@
 'use client'
-import Spinner from '@/components/Spinner'
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
@@ -10,6 +9,7 @@ import {
 } from 'recharts'
 import { format, parseISO } from 'date-fns'
 import StreakBadge from '@/components/StreakBadge'
+import Spinner from '@/components/Spinner'
 
 const tooltipStyle = {
   backgroundColor: '#18181b',
@@ -35,7 +35,6 @@ function formatHour(val: number): string {
 
 export default function ProgressPage() {
   const [data, setData] = useState<any>(null)
-  const [periodDays, setPeriodDays] = useState<string[]>([])
   const [loading, setLoading] = useState(true)
   const router = useRouter()
 
@@ -46,42 +45,15 @@ export default function ProgressPage() {
     }).then(d => {
       if (!d) return
       setData(d)
-      setPeriodDays(d.periodDays ?? [])
       setLoading(false)
     })
   }, [router])
 
-  function isPeriodDay(dateStr: string): boolean {
-    return periodDays.some(d => {
-      const a = new Date(d); const b = new Date(dateStr)
-      return a.toDateString() === b.toDateString()
-    })
-  }
+  if (loading) return <Spinner label="Loading your progress..." />
 
-  async function togglePeriodDay(dateStr: string) {
-    const isOn = isPeriodDay(dateStr)
-    await fetch('/api/period', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ date: dateStr, remove: isOn }),
-    })
-    if (isOn) {
-      setPeriodDays(prev => prev.filter(d =>
-        new Date(d).toDateString() !== new Date(dateStr).toDateString()
-      ))
-    } else {
-      setPeriodDays(prev => [...prev, dateStr])
-    }
-  }
-
-if (loading) {
-  return <Spinner label="Loading your progress..." />
-}
   const weightData = (data.weights ?? []).map((w: any) => ({
     date: format(parseISO(w.date), 'MMM d'),
-    rawDate: w.date,
     weight: Number(w.weight_kg),
-    isPeriod: isPeriodDay(w.date),
   }))
 
   const waterData = (data.waterData ?? []).slice(-14).map((w: any) => ({
@@ -103,13 +75,18 @@ if (loading) {
 
   const submitData = data.submitData ?? []
 
+  const stepsChartData = (data.stepsData ?? []).slice(-14).map((s: any) => ({
+    date: format(parseISO(s.date), 'MMM d'),
+    steps: s.steps,
+  }))
+
   return (
     <div className="min-h-screen bg-[#0f0f0f] pb-24">
       <div className="bg-zinc-900 border-b border-zinc-800 px-6 py-4 sticky top-0 z-10">
         <div className="max-w-lg mx-auto flex items-center justify-between">
           <h1 className="text-xl font-bold text-white">📈 Progress</h1>
           <button onClick={() => router.push('/dashboard')}
-            className="text-rose-400 font-medium text-sm">← Home</button>
+            className="text-rose-400 font-medium text-sm">Home</button>
         </div>
       </div>
 
@@ -119,6 +96,8 @@ if (loading) {
         <div className="grid grid-cols-2 gap-3">
           <StreakBadge label="Day Streak" emoji="🔥" count={data.streak} color="bg-zinc-900 text-orange-400" />
           <StreakBadge label="Total Days" emoji="📅" count={data.totalDays} color="bg-zinc-900 text-rose-400" />
+          <StreakBadge label="Water Goal" emoji="💧" count={data.waterStreak} color="bg-zinc-900 text-blue-400" />
+          <StreakBadge label="Steps Goal" emoji="👟" count={data.stepsStreak} color="bg-zinc-900 text-green-400" />
         </div>
 
         {/* Submit streak calendar */}
@@ -147,69 +126,29 @@ if (loading) {
 
         {/* Weight chart */}
         <div className="bg-zinc-900 rounded-2xl p-4 border border-zinc-800">
-          <div className="flex items-center justify-between mb-1">
-            <h2 className="font-semibold text-white">⚖️ Weight (kg)</h2>
-            <div className="flex gap-3 text-xs text-zinc-500">
-              <span className="flex items-center gap-1">
-                <span className="w-2 h-2 rounded-full bg-rose-500 inline-block" /> Normal
-              </span>
-              <span className="flex items-center gap-1">
-                <span className="w-2 h-2 rounded-full bg-purple-400 inline-block" /> Period
-              </span>
-            </div>
-          </div>
-          <p className="text-xs text-zinc-600 mb-3">Tap a date to mark/unmark period days</p>
-
+          <h2 className="font-semibold text-white mb-4">⚖️ Weight (kg)</h2>
           {weightData.length === 0 ? (
             <div className="flex flex-col items-center py-10 text-zinc-600">
               <p className="text-4xl mb-2">⚖️</p>
               <p className="text-sm">No weight entries yet</p>
             </div>
           ) : (
-            <>
-              <ResponsiveContainer width="100%" height={200}>
-                <LineChart data={weightData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
-                  <XAxis dataKey="date" tick={{ fontSize: 11, fill: '#71717a' }} />
-                  <YAxis tick={{ fontSize: 11, fill: '#71717a' }} domain={['auto', 'auto']} />
-                  <Tooltip contentStyle={tooltipStyle} />
-                  <Line
-                    type="monotone"
-                    dataKey="weight"
-                    stroke="#f43f5e"
-                    strokeWidth={2.5}
-                    dot={(props: any) => {
-                      const { cx, cy, payload } = props
-                      return (
-                        <circle
-                          key={payload.date}
-                          cx={cx} cy={cy} r={5}
-                          fill={payload.isPeriod ? '#a855f7' : '#f43f5e'}
-                          stroke={payload.isPeriod ? '#7c3aed' : '#be123c'}
-                          strokeWidth={1.5}
-                        />
-                      )
-                    }}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-
-              <div className="flex flex-wrap gap-2 mt-3">
-                {weightData.map((w: any) => (
-                  <button
-                    key={w.rawDate}
-                    onClick={() => togglePeriodDay(w.rawDate)}
-                    className={`px-2 py-1 rounded-lg text-xs font-medium transition active:scale-95 ${
-                      w.isPeriod
-                        ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30'
-                        : 'bg-zinc-800 text-zinc-500 border border-zinc-700'
-                    }`}
-                  >
-                    {w.date} {w.isPeriod ? '🩸' : ''}
-                  </button>
-                ))}
-              </div>
-            </>
+            <ResponsiveContainer width="100%" height={200}>
+              <LineChart data={weightData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
+                <XAxis dataKey="date" tick={{ fontSize: 11, fill: '#71717a' }} />
+                <YAxis tick={{ fontSize: 11, fill: '#71717a' }} domain={['auto', 'auto']} />
+                <Tooltip contentStyle={tooltipStyle} />
+                <Line
+                  type="monotone"
+                  dataKey="weight"
+                  stroke="#f43f5e"
+                  strokeWidth={2.5}
+                  dot={{ fill: '#f43f5e', r: 4 }}
+                  activeDot={{ r: 6 }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
           )}
         </div>
 
@@ -300,6 +239,35 @@ if (loading) {
             </ResponsiveContainer>
           )}
           <p className="text-xs text-zinc-600 mt-2">Bright = 7+ hours ✓</p>
+        </div>
+
+        {/* Steps chart */}
+        <div className="bg-zinc-900 rounded-2xl p-4 border border-zinc-800">
+          <h2 className="font-semibold text-white mb-4">👟 Daily Steps</h2>
+          {stepsChartData.length === 0 ? (
+            <div className="flex flex-col items-center py-10 text-zinc-600">
+              <p className="text-4xl mb-2">👟</p>
+              <p className="text-sm">No steps data yet</p>
+            </div>
+          ) : (
+            <ResponsiveContainer width="100%" height={180}>
+              <BarChart data={stepsChartData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
+                <XAxis dataKey="date" tick={{ fontSize: 10, fill: '#71717a' }} />
+                <YAxis tick={{ fontSize: 11, fill: '#71717a' }} />
+                <Tooltip contentStyle={tooltipStyle} />
+                <Bar dataKey="steps" radius={[6, 6, 0, 0]}>
+                  {stepsChartData.map((entry: any, i: number) => (
+                    <Cell key={i}
+                      fill={entry.steps >= 8000 ? '#10b981' : '#059669'}
+                      opacity={entry.steps >= 8000 ? 1 : 0.5}
+                    />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          )}
+          <p className="text-xs text-zinc-600 mt-2">Bright green = 8,000+ steps ✓</p>
         </div>
 
       </div>

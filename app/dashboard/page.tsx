@@ -14,7 +14,6 @@ export default function DashboardPage() {
   const [todayLog, setTodayLog] = useState<any>(null)
   const [plan, setPlan] = useState<any>(null)
   const [streakData, setStreakData] = useState<any[]>([])
-  const [periodDays, setPeriodDays] = useState<string[]>([])
   const [loading, setLoading] = useState(true)
   const router = useRouter()
 
@@ -27,14 +26,12 @@ export default function DashboardPage() {
       fetch('/api/progress').then(r => r.json()),
       fetch('/api/streak-graph').then(r => r.json()),
       fetch('/api/trainer/plan').then(r => r.json()),
-      fetch('/api/period').then(r => r.json()),
-    ]).then(([logData, progressData, streakRes, planData, periodData]) => {
+    ]).then(([logData, progressData, streakRes, planData]) => {
       if (!logData) return
       setUser(logData.user)
       setTodayLog(logData.log)
       setProgress(progressData)
       setPlan(planData.plan)
-      setPeriodDays(periodData.periodDays ?? [])
 
     const raw = streakRes.streakData ?? []
 setStreakData(raw.slice(-14).map((d: any) => ({
@@ -59,9 +56,7 @@ if (loading) {
   const daysUntilWeight = weightInterval - (dayNumber % weightInterval)
   const isWeightDayToday = dayNumber % weightInterval === 0
 
-  const isOnPeriod = periodDays.some(d =>
-    new Date(d).toDateString() === new Date().toDateString()
-  )
+
 
   // Build ticker messages
   const tickerMessages: string[] = []
@@ -78,7 +73,6 @@ if (loading) {
     tickerMessages.push(`⚖️ ${daysUntilWeight} days left until your next Weight Day`)
   }
 
-tickerMessages.push("🩸 Mark your period days on time to keep proper track")
 
   return (
     <div className="min-h-screen bg-[#0f0f0f]">
@@ -185,7 +179,7 @@ tickerMessages.push("🩸 Mark your period days on time to keep proper track")
               todayDone ? 'bg-zinc-700' : 'bg-rose-500'
             }`}
           >
-            {todayDone ? "Edit Today's Log" : "Fill Today's Plan →"}
+            {todayDone ? "Edit Today's Log" : "Fill Today's Plan"}
           </button>
         </div>
 
@@ -209,14 +203,7 @@ tickerMessages.push("🩸 Mark your period days on time to keep proper track")
           </button>
         </div>
 
-        <button
-          onClick={() => router.push('/period')}
-          className="w-full bg-zinc-900 border border-purple-500/20 rounded-2xl p-4 text-left active:scale-95 transition hover:border-purple-500/40"
-        >
-          <p className="text-2xl mb-2">🩸</p>
-          <p className="text-white font-semibold text-sm">Period Tracker</p>
-          <p className="text-zinc-500 text-xs mt-1">Log when your period starts and ends</p>
-        </button>
+    
    <div className="pt-4 space-y-2">
           <button
             onClick={async () => {

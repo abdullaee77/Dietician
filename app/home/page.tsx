@@ -1,9 +1,10 @@
 'use client'
+
 import FoodCheckCard from '@/components/FoodCheckCard'
 import SleepTimePicker from '@/components/SleepTimePicker'
 import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { getDayNumber, shouldShowWeight} from '@/lib/utils'
+import { getDayNumber, shouldShowWeight } from '@/lib/utils'
 import WaterTracker from '@/components/WaterTracker'
 import MealCard from '@/components/MealCard'
 import Spinner from '@/components/Spinner'
@@ -46,28 +47,19 @@ function validate(log: DailyLog): string[] {
   if (!log.lunch_skipped && !log.lunch_food.trim()) errors.push('Lunch food')
   if (!log.dinner_skipped && !log.dinner_food.trim()) errors.push('Dinner food')
   if (log.water_glasses === 0) errors.push('Water intake')
-  if (!log.exercise_desc.trim()) errors.push('Exercise')
-  if (!log.sleep_hours) errors.push('Sleep hours')
+  if (!log.sleep_time) errors.push('Sleep time')
+  if (!log.wake_time) errors.push('Wake time')
   return errors
 }
+
 function calculateSleepHours(sleepTime: string, wakeTime: string): string {
   if (!sleepTime || !wakeTime) return ''
-
   const [sh, sm] = sleepTime.split(':').map(Number)
   const [wh, wm] = wakeTime.split(':').map(Number)
-
   let sleepMinutes = sh * 60 + sm
   let wakeMinutes = wh * 60 + wm
-
-  // If wake time is earlier in the day than sleep time, she slept past midnight
-  if (wakeMinutes <= sleepMinutes) {
-    wakeMinutes += 24 * 60
-  }
-
-  const totalMinutes = wakeMinutes - sleepMinutes
-  const hours = totalMinutes / 60
-
-  return hours.toFixed(1)
+  if (wakeMinutes <= sleepMinutes) wakeMinutes += 24 * 60
+  return (( wakeMinutes - sleepMinutes) / 60).toFixed(1)
 }
 
 export default function HomePage() {
@@ -79,15 +71,14 @@ export default function HomePage() {
   const [dayNumber, setDayNumber] = useState(1)
   const [showWeight, setShowWeight] = useState(false)
   const [weight, setWeight] = useState('')
-
   const [errors, setErrors] = useState<string[]>([])
   const [showErrors, setShowErrors] = useState(false)
-
-  // New Compliance States
   const [skipFoods, setSkipFoods] = useState<any[]>([])
   const [mustEatFoods, setMustEatFoods] = useState<any[]>([])
   const [foodLog, setFoodLog] = useState<any[]>([])
-
+  const [exercises, setExercises] = useState<any[]>([])
+  const [exerciseLog, setExerciseLog] = useState<any[]>([])
+  const [steps, setSteps] = useState('')
   const router = useRouter()
 
   useEffect(() => {
@@ -103,42 +94,48 @@ export default function HomePage() {
         setSkipFoods(data.skipFoods ?? [])
         setMustEatFoods(data.mustEatFoods ?? [])
 
-   if (data.log) {
-  setLog({
-    ...emptyLog, ...data.log,
-    breakfast_food: data.log.breakfast_food ?? '',
-    breakfast_time: data.log.breakfast_time ?? '',
-    lunch_food: data.log.lunch_food ?? '',
-    lunch_time: data.log.lunch_time ?? '',
-    dinner_food: data.log.dinner_food ?? '',
-    dinner_time: data.log.dinner_time ?? '',
-    snack_food: data.log.snack_food ?? '',
-    snack_time: data.log.snack_time ?? '',
-    flex_meal: data.log.flex_meal ?? '',
-    sleep_time: data.log.sleep_time ?? '',
-    wake_time: data.log.wake_time ?? '',
-    exercise_desc: data.log.exercise_desc ?? '',
-    water_glasses: data.log.water_glasses ?? 0,
-    steps: data.log.steps ?? '',
-    exercise_mins: data.log.exercise_mins ?? '',
-    sleep_hours: data.log.sleep_hours ?? '',
-    extra_meals: data.log.extra_meals ?? [],
-    breakfast_skipped: data.log.breakfast_skipped ?? false,
-    lunch_skipped: data.log.lunch_skipped ?? false,
-    dinner_skipped: data.log.dinner_skipped ?? false,
-    energy_level: data.log.energy_level ?? '',
-    bloating: data.log.bloating ?? null,
-  })
-}
-   const dn = getDayNumber(data.user.created_at)
-setDayNumber(dn)
-setShowWeight(shouldShowWeight(dn, data.plan?.weight_interval_days ?? 3))
+        if (data.log) {
+          const normalizedExtraMeals = (data.log.extra_meals ?? []).map((m: any) => ({
+            ...m,
+            food: m.food ?? '',
+            time: m.time ?? '',
+          }))
+          setLog({
+            ...emptyLog, ...data.log,
+            breakfast_food: data.log.breakfast_food ?? '',
+            breakfast_time: data.log.breakfast_time ?? '',
+            lunch_food: data.log.lunch_food ?? '',
+            lunch_time: data.log.lunch_time ?? '',
+            dinner_food: data.log.dinner_food ?? '',
+            dinner_time: data.log.dinner_time ?? '',
+            snack_food: data.log.snack_food ?? '',
+            snack_time: data.log.snack_time ?? '',
+            flex_meal: data.log.flex_meal ?? '',
+            sleep_time: data.log.sleep_time ?? '',
+            wake_time: data.log.wake_time ?? '',
+            exercise_desc: data.log.exercise_desc ?? '',
+            water_glasses: data.log.water_glasses ?? 0,
+            steps: data.log.steps ?? '',
+            exercise_mins: data.log.exercise_mins ?? '',
+            sleep_hours: data.log.sleep_hours ?? '',
+            extra_meals: normalizedExtraMeals,
+            breakfast_skipped: data.log.breakfast_skipped ?? false,
+            lunch_skipped: data.log.lunch_skipped ?? false,
+            dinner_skipped: data.log.dinner_skipped ?? false,
+            energy_level: data.log.energy_level ?? '',
+            bloating: data.log.bloating ?? null,
+          })
+          setSteps(data.log.steps ? String(data.log.steps) : '')
+        }
+
+        const dn = getDayNumber(data.user.created_at)
+        setDayNumber(dn)
+        setShowWeight(shouldShowWeight(dn, data.plan?.weight_interval_days ?? 3))
       })
 
-    // Fetch food log compliance separately
-    fetch('/api/food-log')
-      .then(r => r.json())
-      .then(d => setFoodLog(d.foodLog ?? []))
+    fetch('/api/food-log').then(r => r.json()).then(d => setFoodLog(d.foodLog ?? []))
+    fetch('/api/exercise-plan').then(r => r.json()).then(d => setExercises(d.exercises ?? []))
+    fetch('/api/exercise-log').then(r => r.json()).then(d => setExerciseLog(d.exerciseLog ?? []))
   }, [router])
 
   const updateLog = (field: keyof DailyLog, value: any) =>
@@ -178,7 +175,6 @@ setShowWeight(shouldShowWeight(dn, data.plan?.weight_interval_days ?? 3))
     }))
   }
 
-  // Compliance Handlers
   function getFoodCompliance(name: string, type: string) {
     const entry = foodLog.find(f => f.food_name === name && f.food_type === type)
     return entry?.complied ?? null
@@ -187,9 +183,7 @@ setShowWeight(shouldShowWeight(dn, data.plan?.weight_interval_days ?? 3))
   async function toggleFoodCompliance(name: string, type: string, complied: boolean) {
     setFoodLog(prev => {
       const existing = prev.findIndex(f => f.food_name === name && f.food_type === type)
-      if (existing >= 0) {
-        return prev.map((f, i) => i === existing ? { ...f, complied } : f)
-      }
+      if (existing >= 0) return prev.map((f, i) => i === existing ? { ...f, complied } : f)
       return [...prev, { food_name: name, food_type: type, complied }]
     })
     await fetch('/api/food-log', {
@@ -199,57 +193,71 @@ setShowWeight(shouldShowWeight(dn, data.plan?.weight_interval_days ?? 3))
     })
   }
 
-async function handleSave() {
-  const errs = validate(log)
-  if (errs.length > 0) {
-    setErrors(errs)
-    setShowErrors(true)
-    return
+  function getExerciseCompleted(id: number): boolean {
+    return exerciseLog.find(e => e.exercise_id === id)?.completed ?? false
   }
 
-  setSaving(true)
-
-  try {
-    const res = await fetch('/api/daily-log', {
+  async function toggleExercise(exerciseId: number, completed: boolean) {
+    setExerciseLog(prev => {
+      const existing = prev.findIndex(e => e.exercise_id === exerciseId)
+      if (existing >= 0) return prev.map((e, i) => i === existing ? { ...e, completed } : e)
+      return [...prev, { exercise_id: exerciseId, completed }]
+    })
+    await fetch('/api/exercise-log', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...log, completed: true }),
+      body: JSON.stringify({ exercise_id: exerciseId, completed }),
     })
+  }
 
-    if (!res.ok) {
-      const errBody = await res.json().catch(() => ({}))
-      console.error('Save failed:', res.status, errBody)
-      setSaving(false)
-      setErrors([`Save failed (${res.status}): ${errBody.error ?? 'Unknown error'}`])
+  async function handleSave() {
+    const errs = validate(log)
+    if (errs.length > 0) {
+      setErrors(errs)
       setShowErrors(true)
       return
     }
 
-    if (showWeight && weight) {
-      await fetch('/api/weight', {
+    setSaving(true)
+    try {
+      const res = await fetch('/api/daily-log', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ weight_kg: parseFloat(weight) }),
+        body: JSON.stringify({
+          ...log,
+          steps: steps && steps !== '' ? parseInt(steps) : null,
+          completed: true,
+        }),
       })
+
+      if (!res.ok) {
+        const errBody = await res.json().catch(() => ({}))
+        setSaving(false)
+        setErrors([`Save failed: ${errBody.error ?? 'Unknown error'}`])
+        setShowErrors(true)
+        return
+      }
+
+      if (showWeight && weight) {
+        await fetch('/api/weight', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ weight_kg: parseFloat(weight) }),
+        })
+      }
+
+      setSaving(false)
+      setSaved(true)
+      setShowErrors(false)
+      setTimeout(() => { setSaved(false); router.push('/dashboard') }, 1500)
+    } catch (err) {
+      setSaving(false)
+      setErrors(['Network error — please try again'])
+      setShowErrors(true)
     }
-
-  
-
-    setSaving(false)
-    setSaved(true)
-    setShowErrors(false)
-    setTimeout(() => { setSaved(false); router.push('/dashboard') }, 1500)
-  } catch (err) {
-    console.error('Save threw an exception:', err)
-    setSaving(false)
-    setErrors(['Network error — could not reach the server. Check your connection and try again.'])
-    setShowErrors(true)
   }
-}
 
-if (!user) {
-  return <Spinner label="Loading your day..." />
-}
+  if (!user) return <Spinner label="Loading your day..." />
 
   return (
     <div className="min-h-screen bg-[#0f0f0f] pb-24">
@@ -262,7 +270,7 @@ if (!user) {
             <h1 className="text-lg font-bold text-white">Today's Log</h1>
           </div>
           <button onClick={() => router.push('/dashboard')} className="text-rose-400 text-sm font-medium">
-            ← Back
+            Back
           </button>
         </div>
       </div>
@@ -277,13 +285,12 @@ if (!user) {
           </div>
         )}
 
-        {/* Banners */}
+        {/* Weight banner */}
         {showWeight && (
           <div className="bg-amber-500/10 border border-amber-500/20 rounded-2xl p-3 text-center">
             <p className="text-amber-400 font-medium text-sm">⚖️ Weigh-in day! Log your weight below.</p>
           </div>
         )}
-  
 
         {/* Meals */}
         <div>
@@ -295,14 +302,12 @@ if (!user) {
               onFoodChange={v => updateLog('breakfast_food', v)}
               onTimeChange={v => updateLog('breakfast_time', v)}
               onSkipChange={v => updateLog('breakfast_skipped', v)} />
-
             <MealCard label="Lunch" emoji="🥗"
               food={log.lunch_food} time={log.lunch_time}
               skipped={log.lunch_skipped}
               onFoodChange={v => updateLog('lunch_food', v)}
               onTimeChange={v => updateLog('lunch_time', v)}
               onSkipChange={v => updateLog('lunch_skipped', v)} />
-
             <MealCard label="Dinner" emoji="🍽️"
               food={log.dinner_food} time={log.dinner_time}
               skipped={log.dinner_skipped}
@@ -310,7 +315,6 @@ if (!user) {
               onTimeChange={v => updateLog('dinner_time', v)}
               onSkipChange={v => updateLog('dinner_skipped', v)} />
 
-            {/* Extra meals */}
             {log.extra_meals.map(meal => (
               <MealCard
                 key={meal.id}
@@ -327,24 +331,19 @@ if (!user) {
               />
             ))}
 
-            {/* Add meal / snack buttons */}
             <div className="flex gap-2">
-              <button
-                onClick={addExtraMeal}
-                className="flex-1 py-3 rounded-2xl border border-dashed border-zinc-700 text-zinc-500 text-sm font-medium hover:border-rose-500/50 hover:text-rose-400 transition active:scale-95"
-              >
+              <button onClick={addExtraMeal}
+                className="flex-1 py-3 rounded-2xl border border-dashed border-zinc-700 text-zinc-500 text-sm font-medium hover:border-rose-500/50 hover:text-rose-400 transition active:scale-95">
                 + Add Meal
               </button>
-              <button
-                onClick={() => setLog(prev => ({
-                  ...prev,
-                  extra_meals: [...prev.extra_meals, {
-                    id: Date.now().toString(),
-                    label: 'Snack', food: '', time: '', skipped: false
-                  }]
-                }))}
-                className="flex-1 py-3 rounded-2xl border border-dashed border-zinc-700 text-zinc-500 text-sm font-medium hover:border-rose-500/50 hover:text-rose-400 transition active:scale-95"
-              >
+              <button onClick={() => setLog(prev => ({
+                ...prev,
+                extra_meals: [...prev.extra_meals, {
+                  id: Date.now().toString(),
+                  label: 'Snack', food: '', time: '', skipped: false
+                }]
+              }))}
+                className="flex-1 py-3 rounded-2xl border border-dashed border-zinc-700 text-zinc-500 text-sm font-medium hover:border-rose-500/50 hover:text-rose-400 transition active:scale-95">
                 + Add Snack
               </button>
             </div>
@@ -354,27 +353,61 @@ if (!user) {
         {/* Water */}
         <WaterTracker glasses={log.water_glasses} onChange={handleWaterChange} />
 
-
-        {/* Exercise */}
+        {/* Steps */}
         <div className="bg-zinc-900 rounded-2xl p-4 border border-zinc-800">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="font-semibold text-white">🏃 Exercise</h3>
-            {plan?.exercise_desc && (
-              <span className="text-xs text-rose-400">
-                Target: {plan.exercise_desc} · {plan.exercise_mins} min
-              </span>
-            )}
-          </div>
-          <textarea value={log.exercise_desc}
-            onChange={e => updateLog('exercise_desc', e.target.value)}
-            placeholder="What did you do?"
-            rows={2}
-            className={`${inputCls} resize-none mb-2`} />
-          <input type="number" value={log.exercise_mins}
-            onChange={e => updateLog('exercise_mins', e.target.value)}
-            placeholder="Duration in minutes"
-            className={inputCls} />
+          <h3 className="font-semibold text-white mb-3">👟 Steps</h3>
+          <input
+            type="number"
+            value={steps}
+            onChange={e => setSteps(e.target.value)}
+            placeholder="How many steps today?"
+            className={inputCls}
+          />
         </div>
+
+        {/* Exercise checklist */}
+        {exercises.length > 0 && (
+          <div className="bg-zinc-900 rounded-2xl border border-zinc-800 overflow-hidden">
+            <div className="px-4 pt-4 pb-3 border-b border-zinc-800">
+              <h3 className="font-semibold text-white text-sm">🏃 Exercise Plan</h3>
+              <p className="text-xs text-zinc-500 mt-0.5">Mark what you completed today</p>
+            </div>
+            <div className="divide-y divide-zinc-800">
+              {exercises.map((ex: any) => {
+                const done = getExerciseCompleted(ex.id)
+                const logged = exerciseLog.find(e => e.exercise_id === ex.id) !== undefined
+                return (
+                  <div key={ex.id} className="px-4 py-3 flex items-center gap-3">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-zinc-200 text-sm font-medium truncate">{ex.name}</p>
+                      {ex.description && (
+                        <p className="text-zinc-500 text-xs truncate">{ex.description}</p>
+                      )}
+                    </div>
+                    <div className="flex gap-1.5 shrink-0">
+                      <button
+                        onClick={() => toggleExercise(ex.id, true)}
+                        className={`w-8 h-8 rounded-lg text-sm font-bold transition active:scale-90 flex items-center justify-center ${
+                          done ? 'bg-green-500 text-white' : 'bg-zinc-800 text-zinc-500'
+                        }`}
+                      >
+                        ✓
+                      </button>
+                      <button
+                        onClick={() => toggleExercise(ex.id, false)}
+                        className={`w-8 h-8 rounded-lg text-sm font-bold transition active:scale-90 flex items-center justify-center ${
+                          logged && !done ? 'bg-red-500 text-white' : 'bg-zinc-800 text-zinc-500'
+                        }`}
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )}
 
         {/* Sleep */}
         <div className="bg-zinc-900 rounded-2xl p-4 border border-zinc-800">
@@ -384,65 +417,68 @@ if (!user) {
               <span className="text-xs text-rose-400">Target: {plan.sleep_hours}h</span>
             )}
           </div>
-         <div className="grid grid-cols-2 gap-4 mb-3">
-  <SleepTimePicker
-    label="Slept at"
-    value={log.sleep_time}
-    onChange={v => {
-      const hours = calculateSleepHours(v, log.wake_time)
-      setLog(prev => ({ ...prev, sleep_time: v, sleep_hours: hours }))
-    }}
-  />
-  <SleepTimePicker
-    label="Woke at"
-    value={log.wake_time}
-    onChange={v => {
-      const hours = calculateSleepHours(log.sleep_time, v)
-      setLog(prev => ({ ...prev, wake_time: v, sleep_hours: hours }))
-    }}
-  />
-</div>
-{log.sleep_hours && (
-  <div className="bg-zinc-800 rounded-xl px-3 py-2.5 text-center">
-    <p className="text-zinc-400 text-xs">Total sleep</p>
-    <p className="text-white text-lg font-bold">{log.sleep_hours} hours</p>
-  </div>
-)}
+          <div className="grid grid-cols-2 gap-4 mb-3">
+            <SleepTimePicker
+              label="Slept at"
+              value={log.sleep_time}
+              onChange={v => {
+                const hours = calculateSleepHours(v, log.wake_time)
+                setLog(prev => ({ ...prev, sleep_time: v, sleep_hours: hours }))
+              }}
+            />
+            <SleepTimePicker
+              label="Woke at"
+              value={log.wake_time}
+              onChange={v => {
+                const hours = calculateSleepHours(log.sleep_time, v)
+                setLog(prev => ({ ...prev, wake_time: v, sleep_hours: hours }))
+              }}
+            />
+          </div>
+          {log.sleep_hours && (
+            <div className="bg-zinc-800 rounded-xl px-3 py-2.5 text-center">
+              <p className="text-zinc-400 text-xs">Total sleep</p>
+              <p className="text-white text-lg font-bold">{log.sleep_hours} hours</p>
+            </div>
+          )}
         </div>
-
-     
 
         {/* Flex meal */}
         <div className="bg-zinc-900 rounded-2xl p-4 border border-zinc-800">
           <h3 className="font-semibold text-white mb-1">🍕 Flex Meal</h3>
           <p className="text-xs text-zinc-500 mb-2">Ate something off plan? No judgment 💛</p>
-          <textarea value={log.flex_meal}
+          <textarea
+            value={log.flex_meal}
             onChange={e => updateLog('flex_meal', e.target.value)}
             placeholder="What was it? (optional)"
             rows={2}
-            className={`${inputCls} resize-none`} />
+            className={`${inputCls} resize-none`}
+          />
         </div>
 
         {/* Weight */}
         {showWeight && (
           <div className="bg-zinc-900 rounded-2xl p-4 border border-amber-500/20">
             <h3 className="font-semibold text-white mb-3">⚖️ Today's Weight</h3>
-            <input type="number" step="0.1" value={weight}
+            <input
+              type="number"
+              step="0.1"
+              inputMode="decimal"
+              value={weight}
               onChange={e => setWeight(e.target.value)}
               placeholder="Weight in kg"
-              className={inputCls} />
+              className={`${inputCls} box-border [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none`}
+            />
           </div>
         )}
 
-     
-
-      {/* Today's Food Check */}
-<FoodCheckCard
-  skipFoods={skipFoods}
-  mustEatFoods={mustEatFoods}
-  getCompliance={getFoodCompliance}
-  onToggle={toggleFoodCompliance}
-/>
+        {/* Food check */}
+        <FoodCheckCard
+          skipFoods={skipFoods}
+          mustEatFoods={mustEatFoods}
+          getCompliance={getFoodCompliance}
+          onToggle={toggleFoodCompliance}
+        />
 
         {/* Validation errors */}
         {showErrors && errors.length > 0 && (

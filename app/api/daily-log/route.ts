@@ -12,27 +12,45 @@ export async function GET() {
   const userId = await getUserId()
   if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const today = todayISO()
-  const logs = await query(
-    `SELECT * FROM daily_logs WHERE user_id = $1 AND date = $2`,
-    [userId, today]
-  )
-  const plan = await query(`SELECT * FROM trainer_plan ORDER BY id LIMIT 1`)
-  const skipFoods = await query(`SELECT * FROM skip_foods`)
-  const mustEatFoods = await query(`SELECT * FROM must_eat_foods`)
-  const user = await query(
-    `SELECT id, name, created_at FROM users WHERE id = $1`,
-    [userId]
-  )
+  try {
+    const today = todayISO()
 
-  return NextResponse.json({
-    log: logs[0] ?? null,
-    plan: plan[0] ?? null,
-    skipFoods,
-    mustEatFoods,
-    user: user[0],
-    today,
-  })
+    const logs = await query(
+      `SELECT * FROM daily_logs WHERE user_id = $1 AND date = $2`,
+      [userId, today]
+    )
+    const plan = await query(
+      `SELECT * FROM trainer_plan WHERE user_id = $1 ORDER BY id LIMIT 1`,
+      [userId]
+    )
+    const skipFoods = await query(
+      `SELECT * FROM skip_foods WHERE user_id = $1`,
+      [userId]
+    )
+    const mustEatFoods = await query(
+      `SELECT * FROM must_eat_foods WHERE user_id = $1`,
+      [userId]
+    )
+    const user = await query(
+      `SELECT id, name, created_at FROM users WHERE id = $1`,
+      [userId]
+    )
+
+    return NextResponse.json({
+      log: logs[0] ?? null,
+      plan: plan[0] ?? null,
+      skipFoods,
+      mustEatFoods,
+      user: user[0],
+      today,
+    })
+  } catch (err: any) {
+    console.error('DAILY LOG GET ERROR:', err.message, err.detail, err.code)
+    return NextResponse.json(
+      { error: err.message ?? 'Database error' },
+      { status: 500 }
+    )
+  }
 }
 
 export async function POST(req: NextRequest) {

@@ -45,7 +45,7 @@ export default function InitialWeightPage() {
             disabled={loading || !weight}
             className="w-full py-3 rounded-2xl bg-rose-500 text-white text-lg font-semibold disabled:opacity-40 active:scale-95 transition"
           >
-            {loading ? 'Saving...' : 'Continue →'}
+            {loading ? 'Saving...' : 'Continue'}
           </button>
         </form>
       </div>
