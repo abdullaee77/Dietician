@@ -56,13 +56,7 @@ CREATE TABLE IF NOT EXISTS weight_logs (
   UNIQUE(user_id, date)
 );
 
--- Period logs
-CREATE TABLE IF NOT EXISTS period_logs (
-  id          SERIAL PRIMARY KEY,
-  user_id     INTEGER REFERENCES users(id),
-  date        DATE NOT NULL,
-  UNIQUE(user_id, date)
-);
+
 
 -- Trainer plan (single row)
 CREATE TABLE IF NOT EXISTS trainer_plan (
@@ -126,3 +120,29 @@ ALTER TABLE users ADD COLUMN IF NOT EXISTS initial_weight_logged BOOLEAN DEFAULT
 INSERT INTO trainer_plan (exercise_desc, exercise_mins, sleep_hours, daily_quote, weight_interval_days, measurement_interval_days)
 SELECT 'Walk or light cardio', 30, 8, 'Every day is a fresh start.', 3, 7
 WHERE NOT EXISTS (SELECT 1 FROM trainer_plan);
+
+
+
+-- Add username to users
+ALTER TABLE users ADD COLUMN IF NOT EXISTS username VARCHAR(50) UNIQUE;
+
+-- Add steps back to daily_logs (already exists but just in case)
+ALTER TABLE daily_logs ADD COLUMN IF NOT EXISTS steps INTEGER;
+
+-- New table for exercise plan items
+CREATE TABLE IF NOT EXISTS exercise_plan (
+  id          SERIAL PRIMARY KEY,
+  name        VARCHAR(100) NOT NULL,
+  description TEXT,
+  sort_order  INTEGER DEFAULT 0
+);
+
+-- Track daily exercise completion
+CREATE TABLE IF NOT EXISTS daily_exercise_log (
+  id            SERIAL PRIMARY KEY,
+  user_id       INTEGER REFERENCES users(id),
+  date          DATE NOT NULL DEFAULT CURRENT_DATE,
+  exercise_id   INTEGER REFERENCES exercise_plan(id),
+  completed     BOOLEAN DEFAULT FALSE,
+  UNIQUE(user_id, date, exercise_id)
+);
