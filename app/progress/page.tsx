@@ -1,5 +1,5 @@
 'use client'
-
+import { format, parseISO} from 'date-fns'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import {
@@ -7,7 +7,6 @@ import {
   XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, Legend, Cell
 } from 'recharts'
-import { format, parseISO } from 'date-fns'
 import StreakBadge from '@/components/StreakBadge'
 import Spinner from '@/components/Spinner'
 
@@ -18,6 +17,8 @@ const tooltipStyle = {
   color: '#f4f4f5',
   fontSize: 12,
 }
+
+
 
 function timeToDecimal(t: string): number | null {
   if (!t) return null
@@ -38,7 +39,10 @@ export default function ProgressPage() {
   const [loading, setLoading] = useState(true)
   const router = useRouter()
 
-  useEffect(() => {
+
+
+
+useEffect(() => {
     fetch('/api/progress').then(r => {
       if (r.status === 401) { router.push('/login'); return null }
       return r.json()
@@ -122,7 +126,22 @@ export default function ProgressPage() {
               <span className="w-3 h-3 rounded bg-zinc-800 inline-block" /> Missed
             </span>
           </div>
+          <br />
+          {/* History link */}
+<button
+  onClick={() => router.push('/history')}
+  className="w-full bg-zinc-900 border border-zinc-800 rounded-2xl p-4 flex items-center justify-between active:scale-95 transition hover:border-rose-500/30"
+>
+  <div className="text-left">
+    <p className="text-white font-semibold text-sm">📖 Check Your History</p>
+    <p className="text-zinc-500 text-xs mt-1">View your daily logs month by month</p>
+  </div>
+  <span className="text-zinc-500 text-lg">›</span>
+</button>
         </div>
+
+
+
 
         {/* Weight chart */}
         <div className="bg-zinc-900 rounded-2xl p-4 border border-zinc-800">

@@ -3,9 +3,13 @@ import { query } from '@/lib/db'
 import { cookies } from 'next/headers'
 import { todayISO } from '@/lib/utils'
 
-export async function POST(req: NextRequest) {
+async function getUserId() {
   const cookieStore = await cookies()
-  const userId = cookieStore.get('user_id')?.value
+  return cookieStore.get('user_id')?.value ?? null
+}
+
+export async function POST(req: NextRequest) {
+  const userId = await getUserId()
   if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { weight_kg } = await req.json()
@@ -22,8 +26,7 @@ export async function POST(req: NextRequest) {
 }
 
 export async function GET() {
-  const cookieStore = await cookies()
-  const userId = cookieStore.get('user_id')?.value
+  const userId = await getUserId()
   if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const rows = await query(
@@ -32,5 +35,16 @@ export async function GET() {
     [userId]
   )
 
-  return NextResponse.json({ weights: rows })
+  // Also get today's weight if exists
+  const today = todayISO()
+  const todayWeight = await query(
+    `SELECT weight_kg FROM weight_logs
+     WHERE user_id = $1 AND date = $2`,
+    [userId, today]
+  )
+
+  return NextResponse.json({
+    weights: rows,
+    todayWeight: todayWeight[0]?.weight_kg ?? null
+  })
 }

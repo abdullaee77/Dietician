@@ -4,7 +4,7 @@ import FoodCheckCard from '@/components/FoodCheckCard'
 import SleepTimePicker from '@/components/SleepTimePicker'
 import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { getDayNumber, shouldShowWeight } from '@/lib/utils'
+import { getDayNumber} from '@/lib/utils'
 import WaterTracker from '@/components/WaterTracker'
 import MealCard from '@/components/MealCard'
 import Spinner from '@/components/Spinner'
@@ -41,14 +41,45 @@ const emptyLog: DailyLog = {
 
 const inputCls = "w-full px-3 py-2 rounded-xl border border-zinc-700 bg-zinc-800 text-zinc-200 text-sm placeholder-zinc-600 focus:outline-none focus:ring-2 focus:ring-rose-500 transition"
 
-function validate(log: DailyLog): string[] {
+function validate(
+  log: DailyLog,
+  skipFoods: any[],
+  mustEatFoods: any[],
+  foodLog: any[],
+  exercises: any[],
+  exerciseLog: any[]
+): string[] {
   const errors: string[] = []
+
   if (!log.breakfast_skipped && !log.breakfast_food.trim()) errors.push('Breakfast food')
   if (!log.lunch_skipped && !log.lunch_food.trim()) errors.push('Lunch food')
   if (!log.dinner_skipped && !log.dinner_food.trim()) errors.push('Dinner food')
   if (log.water_glasses === 0) errors.push('Water intake')
   if (!log.sleep_time) errors.push('Sleep time')
   if (!log.wake_time) errors.push('Wake time')
+
+  // All food checks must be answered
+  for (const food of skipFoods) {
+    const entry = foodLog.find(f => f.food_name === food.name && f.food_type === 'skip')
+    if (!entry || entry.complied === null || entry.complied === undefined) {
+      errors.push(`Food check: did you skip ${food.name}?`)
+    }
+  }
+  for (const food of mustEatFoods) {
+    const entry = foodLog.find(f => f.food_name === food.name && f.food_type === 'must')
+    if (!entry || entry.complied === null || entry.complied === undefined) {
+      errors.push(`Food check: did you eat ${food.name}?`)
+    }
+  }
+
+  // All exercises must be marked
+  for (const ex of exercises) {
+    const entry = exerciseLog.find(e => e.exercise_id === ex.id)
+    if (!entry) {
+      errors.push(`Exercise: mark "${ex.name}" as done or not`)
+    }
+  }
+
   return errors
 }
 
@@ -69,8 +100,6 @@ export default function HomePage() {
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [dayNumber, setDayNumber] = useState(1)
-  const [showWeight, setShowWeight] = useState(false)
-  const [weight, setWeight] = useState('')
   const [errors, setErrors] = useState<string[]>([])
   const [showErrors, setShowErrors] = useState(false)
   const [skipFoods, setSkipFoods] = useState<any[]>([])
@@ -130,7 +159,6 @@ export default function HomePage() {
 
         const dn = getDayNumber(data.user.created_at)
         setDayNumber(dn)
-        setShowWeight(shouldShowWeight(dn, data.plan?.weight_interval_days ?? 3))
       })
 
     fetch('/api/food-log').then(r => r.json()).then(d => setFoodLog(d.foodLog ?? []))
@@ -211,12 +239,12 @@ export default function HomePage() {
   }
 
   async function handleSave() {
-    const errs = validate(log)
-    if (errs.length > 0) {
-      setErrors(errs)
-      setShowErrors(true)
-      return
-    }
+   const errs = validate(log, skipFoods, mustEatFoods, foodLog, exercises, exerciseLog)
+  if (errs.length > 0) {
+    setErrors(errs)
+    setShowErrors(true)
+    return
+  }
 
     setSaving(true)
     try {
@@ -238,13 +266,7 @@ export default function HomePage() {
         return
       }
 
-      if (showWeight && weight) {
-        await fetch('/api/weight', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ weight_kg: parseFloat(weight) }),
-        })
-      }
+
 
       setSaving(false)
       setSaved(true)
@@ -285,12 +307,7 @@ export default function HomePage() {
           </div>
         )}
 
-        {/* Weight banner */}
-        {showWeight && (
-          <div className="bg-amber-500/10 border border-amber-500/20 rounded-2xl p-3 text-center">
-            <p className="text-amber-400 font-medium text-sm">⚖️ Weigh-in day! Log your weight below.</p>
-          </div>
-        )}
+      
 
         {/* Meals */}
         <div>
@@ -456,21 +473,7 @@ export default function HomePage() {
           />
         </div>
 
-        {/* Weight */}
-        {showWeight && (
-          <div className="bg-zinc-900 rounded-2xl p-4 border border-amber-500/20">
-            <h3 className="font-semibold text-white mb-3">⚖️ Today's Weight</h3>
-            <input
-              type="number"
-              step="0.1"
-              inputMode="decimal"
-              value={weight}
-              onChange={e => setWeight(e.target.value)}
-              placeholder="Weight in kg"
-              className={`${inputCls} box-border [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none`}
-            />
-          </div>
-        )}
+        
 
         {/* Food check */}
         <FoodCheckCard
