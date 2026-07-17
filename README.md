@@ -34,3 +34,103 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+```
+dietician
+├─ AGENTS.md
+├─ app
+│  ├─ api
+│  │  ├─ daily-log
+│  │  │  └─ route.ts
+│  │  ├─ exercise-log
+│  │  │  └─ route.ts
+│  │  ├─ exercise-plan
+│  │  │  └─ route.ts
+│  │  ├─ food-log
+│  │  │  └─ route.ts
+│  │  ├─ initial-weight
+│  │  │  └─ route.ts
+│  │  ├─ login
+│  │  │  └─ route.ts
+│  │  ├─ logout
+│  │  │  └─ route.ts
+│  │  ├─ progress
+│  │  │  └─ route.ts
+│  │  ├─ reset
+│  │  │  └─ route.ts
+│  │  ├─ setup
+│  │  │  └─ route.ts
+│  │  ├─ streak-graph
+│  │  │  └─ route.ts
+│  │  ├─ trainer
+│  │  │  ├─ logs
+│  │  │  │  └─ route.ts
+│  │  │  └─ plan
+│  │  │     └─ route.ts
+│  │  ├─ water
+│  │  │  └─ route.ts
+│  │  └─ weight
+│  │     └─ route.ts
+│  ├─ dashboard
+│  │  └─ page.tsx
+│  ├─ favicon.ico
+│  ├─ globals.css
+│  ├─ home
+│  │  └─ page.tsx
+│  ├─ initial-weight
+│  │  └─ page.tsx
+│  ├─ layout.tsx
+│  ├─ login
+│  │  └─ page.tsx
+│  ├─ page.tsx
+│  ├─ plan
+│  │  └─ page.tsx
+│  ├─ progress
+│  │  └─ page.tsx
+│  ├─ register-sw.tsx
+│  ├─ reset
+│  │  └─ page.tsx
+│  ├─ setup
+│  │  └─ page.tsx
+│  ├─ trainer
+│  │  ├─ dashboard
+│  │  │  └─ page.tsx
+│  │  ├─ page.tsx
+│  │  └─ plan
+│  │     └─ page.tsx
+│  └─ welcome
+│     └─ page.tsx
+├─ CLAUDE.md
+├─ components
+│  ├─ FoodCheckCard.tsx
+│  ├─ MealCard.tsx
+│  ├─ RunningTicker.tsx
+│  ├─ SleepTimePicker.tsx
+│  ├─ Spinner.tsx
+│  ├─ StreakBadge.tsx
+│  └─ WaterTracker.tsx
+├─ db
+├─ eslint.config.mjs
+├─ lib
+│  ├─ db.ts
+│  ├─ schema.sql
+│  └─ utils.ts
+├─ next-pwa.d.ts
+├─ next.config.ts
+├─ package-lock.json
+├─ package.json
+├─ postcss.config.mjs
+├─ public
+│  ├─ file.svg
+│  ├─ globe.svg
+│  ├─ icons
+│  │  ├─ icon-192.png
+│  │  └─ icon-512.png
+│  ├─ manifest.json
+│  ├─ next.svg
+│  ├─ vercel.svg
+│  └─ window.svg
+├─ README.md
+└─ tsconfig.json
+
+```
