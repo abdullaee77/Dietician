@@ -78,3 +78,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: err.message }, { status: 500 })
   }
 }
+export async function GET(req: NextRequest) {
+  console.log("GET route hit by cron");
+
+  return NextResponse.json({
+    message: "GET works",
+    cron: req.headers.get("x-vercel-cron"),
+  });
+}
