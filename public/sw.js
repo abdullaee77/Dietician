@@ -69,7 +69,6 @@ self.addEventListener('push', function(event) {
     body: data.body || 'Time to fill your daily plan!',
     icon: '/icons/icon-192.png',
 badge: '/icons/badge-96.png',
- color: '#FF69B4',
     vibrate: [200, 100, 200],
     data: { url: data.url || '/home' },
     actions: [
