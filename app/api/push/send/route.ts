@@ -174,12 +174,14 @@ async function sendNotifications() {
 
 // Used by Vercel Cron
 export async function GET(req: NextRequest) {
+  console.log("GET route hit by cron");
+
   console.log("Headers:");
   req.headers.forEach((value, key) => {
     console.log(`${key}: ${value}`);
   });
 
-  return NextResponse.json({ ok: true });
+  return sendNotifications();
 }
 // Used by Postman
 export async function POST(req: NextRequest) {
