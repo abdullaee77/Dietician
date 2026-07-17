@@ -68,14 +68,10 @@ self.addEventListener('push', function(event) {
   const options = {
     body: data.body || 'Time to fill your daily plan!',
     icon: '/icons/icon-192.png',
-badge: '/icons/badge-96.png',
- color: '#FF69B4',
+    badge: '/icons/badge-96.png',
+    color: '#FF69B4',
     vibrate: [200, 100, 200],
-    data: { url: data.url || '/home' },
-    actions: [
-      { action: 'fill', title: '📝 Fill Now' },
-      { action: 'dismiss', title: 'Later' }
-    ]
+    data: { url: data.url || '/home' }
   }
 
   event.waitUntil(
@@ -91,10 +87,24 @@ badge: '/icons/badge-96.png',
 
 // Notification click handler
 self.addEventListener('notificationclick', function(event) {
+  console.log('🔔 NOTIFICATION CLICKED')
   event.notification.close()
-  if (event.action === 'fill' || !event.action) {
-    event.waitUntil(
-      clients.openWindow(event.notification.data.url || '/home')
-    )
-  }
+
+  const targetUrl = event.notification.data?.url || '/home'
+
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function(clientList) {
+      for (const client of clientList) {
+        if (client.url.includes(self.location.origin) && 'focus' in client) {
+          client.navigate(targetUrl)
+          return client.focus()
+        }
+      }
+      if (clients.openWindow) {
+        return clients.openWindow(targetUrl)
+      }
+    }).catch(function(err) {
+      console.error('🔔 NOTIFICATION CLICK ERROR', err)
+    })
+  )
 })
