@@ -1,3 +1,4 @@
+
 // 'use client'
 
 // import { useEffect, useState } from 'react'
@@ -21,6 +22,18 @@
 //   const [weightSaved, setWeightSaved] = useState(false)
 //   const [todayWeight, setTodayWeight] = useState<number | null>(null)
 //   const router = useRouter()
+
+//   // Prevent background scrolling when modal is open
+//   useEffect(() => {
+//     if (weightExpanded) {
+//       document.body.style.overflow = 'hidden'
+//     } else {
+//       document.body.style.overflow = ''
+//     }
+//     return () => {
+//       document.body.style.overflow = ''
+//     }
+//   }, [weightExpanded])
 
 //   async function subscribeToPush() {
 //     if (!('serviceWorker' in navigator) || !('PushManager' in window)) return
@@ -98,7 +111,7 @@
 //     setTimeout(() => {
 //       setWeightExpanded(false)
 //       setWeightSaved(false)
-//     }, 1500)
+//     }, 1200)
 //   }
 
 //   if (loading) return <Spinner label="Loading..." />
@@ -124,7 +137,25 @@
 //   }
 
 //   return (
-//     <div className="min-h-screen bg-[#0f0f0f]">
+//     <div className="min-h-screen bg-[#0f0f0f] relative">
+//       <style jsx global>{`
+//         @keyframes gradient-border-flow {
+//           0% { background-position: 0% 50%; }
+//           50% { background-position: 100% 50%; }
+//           100% { background-position: 0% 50%; }
+//         }
+//         @keyframes glowing-shine {
+//           0%, 100% { filter: drop-shadow(0 0 4px rgba(239, 68, 68, 0.4)) drop-shadow(0 0 10px rgba(249, 115, 22, 0.2)); }
+//           50% { filter: drop-shadow(0 0 10px rgba(249, 115, 22, 0.7)) drop-shadow(0 0 20px rgba(239, 68, 68, 0.4)); }
+//         }
+//         .animate-red-orange-flow {
+//           background-size: 200% 200%;
+//           animation: gradient-border-flow 3s ease infinite;
+//         }
+//         .animate-glow-shine {
+//           animation: glowing-shine 2.5s ease-in-out infinite;
+//         }
+//       `}</style>
 
 //       {/* Navbar */}
 //       <div className="bg-zinc-900 border-b border-zinc-800 px-6 py-4">
@@ -140,63 +171,106 @@
 //         <RunningTicker messages={tickerMessages} />
 
 //         {/* Stats */}
-//         <div className="grid grid-cols-3 gap-2">
-//           <div className="bg-zinc-900 rounded-2xl p-3 border border-zinc-800 text-center min-w-0">
+//         <div className="grid grid-cols-3 gap-2 items-stretch">
+//           <div className="bg-zinc-900 rounded-2xl p-3 border border-zinc-800 flex flex-col justify-center items-center text-center min-w-0">
 //             <p className="text-lg sm:text-2xl font-bold text-orange-400 truncate">{progress?.streak ?? 0}</p>
 //             <p className="text-[10px] sm:text-xs text-zinc-500 mt-1 truncate">🔥 Streak</p>
 //           </div>
-//           <div className="bg-zinc-900 rounded-2xl p-3 border border-zinc-800 text-center min-w-0">
+//           <div className="bg-zinc-900 rounded-2xl p-3 border border-zinc-800 flex flex-col justify-center items-center text-center min-w-0">
 //             <p className="text-lg sm:text-2xl font-bold text-rose-400 truncate">{progress?.totalDays ?? 0}</p>
 //             <p className="text-[10px] sm:text-xs text-zinc-500 mt-1 truncate">📅 Days</p>
 //           </div>
 
-//           {/* Weight card — expandable on weight day */}
-//           <div
-//             onClick={() => isWeightDay && setWeightExpanded(prev => !prev)}
-//             className={`rounded-2xl p-3 border text-center min-w-0 transition ${
-//               isWeightDay
-//                 ? 'bg-amber-500/10 border-amber-500/40 cursor-pointer active:scale-95'
-//                 : 'bg-zinc-900 border-zinc-800'
-//             }`}
-//           >
-//             <p
-//               className="font-bold text-purple-400 whitespace-nowrap truncate"
-//               style={{ fontSize: 'clamp(0.75rem, 4vw, 1.25rem)' }}
-//             >
-//               {todayWeight
-//                 ? `${todayWeight}kg`
-//                 : latestWeight
-//                   ? `${latestWeight}kg`
-//                   : '—'}
-//             </p>
-//             <p className="text-[10px] sm:text-xs text-zinc-500 mt-1 truncate">
-//               {isWeightDay ? '⚖️ Tap to log' : '⚖️ Weight'}
-//             </p>
+//           {/* Weight card */}
+//           <div className="relative rounded-2xl min-w-0 w-full h-full flex flex-col justify-stretch">
+//             {isWeightDay ? (
+//               <>
+//                 <div 
+//                   onClick={() => setWeightExpanded(true)}
+//                   className="absolute inset-0 rounded-2xl p-[1.5px] animate-red-orange-flow animate-glow-shine bg-gradient-to-r from-red-500 via-orange-500 to-red-500 cursor-pointer active:scale-95 transition"
+//                 >
+//                   <div className="h-full w-full bg-zinc-950 hover:bg-zinc-900/95 rounded-[15px] p-3 flex flex-col justify-center items-center text-center transition-colors duration-200">
+//                     <p
+//                       className="font-bold whitespace-nowrap truncate bg-gradient-to-r from-red-400 to-orange-400 bg-clip-text text-transparent"
+//                       style={{ fontSize: 'clamp(0.75rem, 4vw, 1.25rem)' }}
+//                     >
+//                       {todayWeight
+//                         ? `${todayWeight}kg`
+//                         : latestWeight
+//                           ? `${latestWeight}kg`
+//                           : '—'}
+//                     </p>
+//                     <p className="text-[10px] sm:text-xs text-orange-400/90 mt-1 truncate font-semibold uppercase tracking-wider">
+//                       ⚖️ Weight
+//                     </p>
+//                   </div>
+//                 </div>
+//                 {/* Structural placeholder ONLY rendered on weight days when wrapper is absolute */}
+//                 <div className="p-3 opacity-0 pointer-events-none select-none flex flex-col justify-center items-center">
+//                   <p style={{ fontSize: 'clamp(0.75rem, 4vw, 1.25rem)' }}>—</p>
+//                   <p className="text-[10px] sm:text-xs mt-1">—</p>
+//                 </div>
+//               </>
+//             ) : (
+//               // On non-weight days, renders as a standard block, automatically matching width/height of the streak/days boxes perfectly
+//               <div className="w-full h-full bg-zinc-900 border border-zinc-800 rounded-2xl p-3 flex flex-col justify-center items-center text-center">
+//                 <p
+//                   className="font-bold text-purple-400 whitespace-nowrap truncate"
+//                   style={{ fontSize: 'clamp(0.75rem, 4vw, 1.25rem)' }}
+//                 >
+//                   {todayWeight
+//                     ? `${todayWeight}kg`
+//                     : latestWeight
+//                       ? `${latestWeight}kg`
+//                       : '—'}
+//                 </p>
+//                 <p className="text-[10px] sm:text-xs text-zinc-500 mt-1 truncate">
+//                   ⚖️ Weight
+//                 </p>
+//               </div>
+//             )}
 //           </div>
 //         </div>
 
-//         {/* Weight input — expands in place on weight day */}
+//         {/* Weight input floating card overlay */}
 //         {isWeightDay && weightExpanded && (
-//           <div className="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-4">
-//             <p className="text-amber-400 font-semibold text-sm mb-3">
-//               ⚖️ Log today's weight
-//             </p>
-//             <input
-//               type="number"
-//               step="0.1"
-//               inputMode="decimal"
-//               value={weightInput || (todayWeight ? String(todayWeight) : '')}
-//               onChange={e => setWeightInput(e.target.value)}
-//               placeholder="Weight in kg"
-//               className="w-full px-3 py-2 rounded-xl border border-amber-500/30 bg-zinc-900 text-white text-sm placeholder-zinc-600 focus:outline-none focus:ring-2 focus:ring-amber-500 transition mb-3 box-border [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-//             />
-//             <button
-//               onClick={handleWeightSave}
-//               disabled={!weightInput}
-//               className="w-full py-2.5 rounded-xl bg-amber-500 text-white font-semibold text-sm disabled:opacity-40 active:scale-95 transition"
+//           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+//             <div 
+//               className="bg-zinc-950 border border-zinc-850 rounded-3xl p-6 w-full max-w-sm shadow-2xl relative"
+//               onClick={(e) => e.stopPropagation()}
 //             >
-//               {weightSaved ? '✅ Saved!' : todayWeight ? 'Update Weight' : 'Save Weight'}
-//             </button>
+//               <button 
+//                 onClick={() => setWeightExpanded(false)}
+//                 className="absolute top-4 right-4 text-zinc-400 hover:text-zinc-200 p-1"
+//               >
+//                 ✕
+//               </button>
+              
+//               <div className="text-center mb-5">
+//                 <span className="text-3xl">⚖️</span>
+//                 <h3 className="text-white font-bold text-lg mt-2">Log Today's Weight</h3>
+//                 <p className="text-zinc-400 text-xs mt-1">Keep up the great progress!</p>
+//               </div>
+
+//               <input
+//                 type="number"
+//                 step="0.1"
+//                 inputMode="decimal"
+//                 autoFocus
+//                 value={weightInput || (todayWeight ? String(todayWeight) : '')}
+//                 onChange={e => setWeightInput(e.target.value)}
+//                 placeholder="Weight in kg"
+//                 className="w-full px-4 py-3 rounded-xl border border-zinc-850 bg-zinc-900 text-white text-base text-center placeholder-zinc-600 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 transition mb-4 box-border [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+//               />
+
+//               <button
+//                 onClick={handleWeightSave}
+//                 disabled={!weightInput}
+//                 className="w-full py-3.5 rounded-xl bg-gradient-to-r from-red-500 to-orange-500 text-white font-bold text-sm disabled:opacity-40 active:scale-95 transition"
+//               >
+//                 {weightSaved ? '✅ Weight Saved!' : todayWeight ? 'Update Weight' : 'Save Weight'}
+//               </button>
+//             </div>
 //           </div>
 //         )}
 
@@ -315,7 +389,6 @@ import { getDayNumber, shouldShowWeight } from '@/lib/utils'
 import { format, parseISO } from 'date-fns'
 import { BarChart, Bar, XAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts'
 import RunningTicker from '@/components/RunningTicker'
-import Spinner from '@/components/Spinner'
 
 export default function DashboardPage() {
   const [user, setUser] = useState<any>(null)
@@ -331,7 +404,6 @@ export default function DashboardPage() {
   const [todayWeight, setTodayWeight] = useState<number | null>(null)
   const router = useRouter()
 
-  // Prevent background scrolling when modal is open
   useEffect(() => {
     if (weightExpanded) {
       document.body.style.overflow = 'hidden'
@@ -422,7 +494,81 @@ export default function DashboardPage() {
     }, 1200)
   }
 
-  if (loading) return <Spinner label="Loading..." />
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#0f0f0f] animate-pulse">
+        {/* Skeleton Navbar */}
+        <div className="bg-zinc-900/60 border-b border-zinc-850 px-6 py-4">
+          <div className="max-w-lg mx-auto space-y-2">
+            <div className="h-3.5 w-12 bg-zinc-800 rounded" />
+            <div className="h-5 w-48 bg-zinc-800 rounded" />
+          </div>
+        </div>
+
+        <div className="max-w-lg mx-auto px-4 py-6 space-y-4">
+          {/* Skeleton Ticker */}
+          <div className="h-8 bg-zinc-900 rounded-xl" />
+
+          {/* Skeleton Stats Grid */}
+          <div className="grid grid-cols-3 gap-2">
+            <div className="bg-zinc-900 rounded-2xl p-4 h-20 flex flex-col justify-center items-center">
+              <div className="h-6 w-8 bg-zinc-800 rounded mb-2" />
+              <div className="h-3 w-12 bg-zinc-800 rounded" />
+            </div>
+            <div className="bg-zinc-900 rounded-2xl p-4 h-20 flex flex-col justify-center items-center">
+              <div className="h-6 w-8 bg-zinc-800 rounded mb-2" />
+              <div className="h-3 w-12 bg-zinc-800 rounded" />
+            </div>
+            <div className="bg-zinc-900 rounded-2xl p-4 h-20 flex flex-col justify-center items-center">
+              <div className="h-6 w-12 bg-zinc-800 rounded mb-2" />
+              <div className="h-3 w-12 bg-zinc-800 rounded" />
+            </div>
+          </div>
+
+          {/* Skeleton Streak graph */}
+          <div className="bg-zinc-900 rounded-2xl p-4 h-[208px] flex flex-col justify-between">
+            <div>
+              <div className="h-4 w-40 bg-zinc-800 rounded mb-2" />
+              <div className="h-3 w-20 bg-zinc-800 rounded" />
+            </div>
+            <div className="h-24 w-full bg-zinc-900/50 flex items-end gap-1.5 px-2">
+              {Array.from({ length: 14 }).map((_, i) => (
+                <div key={i} className="flex-1 bg-zinc-800 rounded-t h-12" />
+              ))}
+            </div>
+            <div className="flex gap-4">
+              <div className="h-3 w-12 bg-zinc-800 rounded" />
+              <div className="h-3 w-12 bg-zinc-800 rounded" />
+            </div>
+          </div>
+
+          {/* Skeleton Today card */}
+          <div className="bg-zinc-900 rounded-2xl p-5 h-[148px] flex flex-col justify-between">
+            <div className="flex justify-between items-center">
+              <div className="h-3.5 w-32 bg-zinc-800 rounded" />
+              <div className="h-5 w-20 bg-zinc-800 rounded-full" />
+            </div>
+            <div className="h-5 w-44 bg-zinc-800 rounded mt-2" />
+            <div className="h-12 w-full bg-zinc-800 rounded-2xl mt-4" />
+          </div>
+
+          {/* Skeleton Nav cards */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="bg-zinc-900 rounded-2xl p-4 h-28">
+              <div className="h-8 w-8 bg-zinc-800 rounded-lg mb-2" />
+              <div className="h-4 w-16 bg-zinc-800 rounded mb-1" />
+              <div className="h-3 w-24 bg-zinc-800 rounded" />
+            </div>
+            <div className="bg-zinc-900 rounded-2xl p-4 h-28">
+              <div className="h-8 w-8 bg-zinc-800 rounded-lg mb-2" />
+              <div className="h-4 w-16 bg-zinc-800 rounded mb-1" />
+              <div className="h-3 w-24 bg-zinc-800 rounded" />
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   const dayNumber = user ? getDayNumber(user.created_at) : 1
   const latestWeight = progress?.weights?.slice(-1)[0]?.weight_kg
@@ -513,14 +659,13 @@ export default function DashboardPage() {
                     </p>
                   </div>
                 </div>
-                {/* Structural placeholder ONLY rendered on weight days when wrapper is absolute */}
+                {/* Structural placeholder */}
                 <div className="p-3 opacity-0 pointer-events-none select-none flex flex-col justify-center items-center">
                   <p style={{ fontSize: 'clamp(0.75rem, 4vw, 1.25rem)' }}>—</p>
                   <p className="text-[10px] sm:text-xs mt-1">—</p>
                 </div>
               </>
             ) : (
-              // On non-weight days, renders as a standard block, automatically matching width/height of the streak/days boxes perfectly
               <div className="w-full h-full bg-zinc-900 border border-zinc-800 rounded-2xl p-3 flex flex-col justify-center items-center text-center">
                 <p
                   className="font-bold text-purple-400 whitespace-nowrap truncate"
