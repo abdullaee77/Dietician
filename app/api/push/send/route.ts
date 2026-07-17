@@ -174,20 +174,13 @@ async function sendNotifications() {
 
 // Used by Vercel Cron
 export async function GET(req: NextRequest) {
-  const cronHeader = req.headers.get('x-vercel-cron')
+  console.log("Headers:");
+  req.headers.forEach((value, key) => {
+    console.log(`${key}: ${value}`);
+  });
 
-  if (!cronHeader) {
-    return NextResponse.json(
-      { error: 'Unauthorized' },
-      { status: 401 }
-    )
-  }
-
-  console.log('GET route hit by cron')
-
-  return sendNotifications()
+  return NextResponse.json({ ok: true });
 }
-
 // Used by Postman
 export async function POST(req: NextRequest) {
   const authHeader = req.headers.get('authorization')
