@@ -42,6 +42,7 @@ const inputCls = "w-full px-3 py-2 rounded-xl border border-zinc-700 bg-zinc-800
 
 function validate(
   log: DailyLog,
+  steps: string,
   skipFoods: any[],
   mustEatFoods: any[],
   foodLog: any[],
@@ -54,6 +55,7 @@ function validate(
   if (!log.lunch_skipped && !log.lunch_food.trim()) errors.push('Lunch food')
   if (!log.dinner_skipped && !log.dinner_food.trim()) errors.push('Dinner food')
   if (log.water_glasses === 0) errors.push('Water intake')
+  if (!steps || steps === '' || parseInt(steps) === 0) errors.push('Steps count')
   if (!log.sleep_time) errors.push('Sleep time')
   if (!log.wake_time) errors.push('Wake time')
 
@@ -238,7 +240,7 @@ export default function HomePage() {
   }
 
   async function handleSave() {
-    const errs = validate(log, skipFoods, mustEatFoods, foodLog, exercises, exerciseLog)
+    const errs = validate(log, steps, skipFoods, mustEatFoods, foodLog, exercises, exerciseLog)
     if (errs.length > 0) {
       setErrors(errs)
       setShowErrors(true)
@@ -275,7 +277,7 @@ export default function HomePage() {
       setShowErrors(true)
     }
   }
-if (!user) {
+  if (!user) {
     return (
       <div className="min-h-screen bg-[#0f0f0f] pb-24">
         {/* Header Skeleton */}
@@ -299,7 +301,7 @@ if (!user) {
           {/* Meals Section Skeleton */}
           <div className="space-y-3">
             <div className="h-3 w-14 bg-zinc-800 rounded ml-1 uppercase tracking-wide animate-pulse" />
-            
+
             {/* 3 Core Meals Matching MealCard Dimensions */}
             {[1, 2, 3].map((i) => (
               <div key={i} className="bg-zinc-900 rounded-2xl p-4 border border-zinc-800 space-y-3">
@@ -490,17 +492,15 @@ if (!user) {
                     <div className="flex gap-1.5 shrink-0">
                       <button
                         onClick={() => toggleExercise(ex.id, true)}
-                        className={`w-8 h-8 rounded-lg text-sm font-bold transition active:scale-90 flex items-center justify-center ${
-                          done ? 'bg-green-500 text-white' : 'bg-zinc-800 text-zinc-500'
-                        }`}
+                        className={`w-8 h-8 rounded-lg text-sm font-bold transition active:scale-90 flex items-center justify-center ${done ? 'bg-green-500 text-white' : 'bg-zinc-800 text-zinc-500'
+                          }`}
                       >
                         ✓
                       </button>
                       <button
                         onClick={() => toggleExercise(ex.id, false)}
-                        className={`w-8 h-8 rounded-lg text-sm font-bold transition active:scale-90 flex items-center justify-center ${
-                          logged && !done ? 'bg-red-500 text-white' : 'bg-zinc-800 text-zinc-500'
-                        }`}
+                        className={`w-8 h-8 rounded-lg text-sm font-bold transition active:scale-90 flex items-center justify-center ${logged && !done ? 'bg-red-500 text-white' : 'bg-zinc-800 text-zinc-500'
+                          }`}
                       >
                         ✕
                       </button>
@@ -546,7 +546,7 @@ if (!user) {
           )}
         </div>
 
-  
+
 
         {/* Food check */}
         <FoodCheckCard
