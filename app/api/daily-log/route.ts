@@ -72,10 +72,10 @@ export async function POST(req: NextRequest) {
         water_glasses, steps,
         exercise_desc, exercise_mins,
         sleep_time, wake_time, sleep_hours,
-         completed
+        completed
       ) VALUES (
         $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,
-        $15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25
+        $15,$16,$17,$18,$19,$20,$21,$22
       )
       ON CONFLICT (user_id, date) DO UPDATE SET
         breakfast_food=$3, breakfast_time=$4, breakfast_skipped=$5,
@@ -86,22 +86,20 @@ export async function POST(req: NextRequest) {
         water_glasses=$15, steps=$16,
         exercise_desc=$17, exercise_mins=$18,
         sleep_time=$19, wake_time=$20, sleep_hours=$21,
-        
-         completed=$25`,
+        completed=$22`,
       [
-        userId, today,
-        body.breakfast_food ?? null, body.breakfast_time ?? null, body.breakfast_skipped ?? false,
-        body.lunch_food ?? null, body.lunch_time ?? null, body.lunch_skipped ?? false,
-        body.dinner_food ?? null, body.dinner_time ?? null, body.dinner_skipped ?? false,
-        body.snack_food ?? null, body.snack_time ?? null,
-        JSON.stringify(body.extra_meals ?? []),
-body.water_glasses ?? 0,
-body.steps && body.steps !== '' ? parseInt(body.steps) : null,
-body.exercise_desc ?? null,
-body.exercise_mins && body.exercise_mins !== '' ? parseInt(body.exercise_mins) : null,
-        body.sleep_time ?? null, body.wake_time ?? null, body.sleep_hours ?? null,
-        
-       body.completed ?? false,
+        userId, today,                                                          // $1, $2
+        body.breakfast_food ?? null, body.breakfast_time ?? null, body.breakfast_skipped ?? false,  // $3, $4, $5
+        body.lunch_food ?? null, body.lunch_time ?? null, body.lunch_skipped ?? false,              // $6, $7, $8
+        body.dinner_food ?? null, body.dinner_time ?? null, body.dinner_skipped ?? false,           // $9, $10, $11
+        body.snack_food ?? null, body.snack_time ?? null,                       // $12, $13
+        JSON.stringify(body.extra_meals ?? []),                                 // $14
+        body.water_glasses ?? 0,                                                // $15
+        body.steps && body.steps !== '' ? parseInt(body.steps) : null,          // $16
+        body.exercise_desc ?? null,                                             // $17
+        body.exercise_mins && body.exercise_mins !== '' ? parseInt(body.exercise_mins) : null, // $18
+        body.sleep_time ?? null, body.wake_time ?? null, body.sleep_hours ?? null, // $19, $20, $21
+        body.completed ?? false,                                                // $22
       ]
     )
 
