@@ -72,7 +72,7 @@ export async function POST(req: NextRequest) {
         water_glasses, steps,
         exercise_desc, exercise_mins,
         sleep_time, wake_time, sleep_hours,
-        energy_level, bloating, flex_meal, completed
+         completed
       ) VALUES (
         $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,
         $15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25
@@ -86,8 +86,8 @@ export async function POST(req: NextRequest) {
         water_glasses=$15, steps=$16,
         exercise_desc=$17, exercise_mins=$18,
         sleep_time=$19, wake_time=$20, sleep_hours=$21,
-        energy_level=$22, bloating=$23,
-        flex_meal=$24, completed=$25`,
+        
+         completed=$25`,
       [
         userId, today,
         body.breakfast_food ?? null, body.breakfast_time ?? null, body.breakfast_skipped ?? false,
@@ -100,8 +100,8 @@ body.steps && body.steps !== '' ? parseInt(body.steps) : null,
 body.exercise_desc ?? null,
 body.exercise_mins && body.exercise_mins !== '' ? parseInt(body.exercise_mins) : null,
         body.sleep_time ?? null, body.wake_time ?? null, body.sleep_hours ?? null,
-        body.energy_level ?? null, body.bloating ?? null,
-        body.flex_meal ?? null, body.completed ?? false,
+        
+       body.completed ?? false,
       ]
     )
 

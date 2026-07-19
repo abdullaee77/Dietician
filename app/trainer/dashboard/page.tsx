@@ -13,8 +13,7 @@ interface Log {
   water_glasses: number; steps: number
   exercise_desc: string; exercise_mins: number
   sleep_time: string; wake_time: string; sleep_hours: number
-  energy_level: string; bloating: boolean
-  flex_meal: string; completed: boolean
+ completed: boolean
 }
 
 export default function TrainerDashboard() {
@@ -160,27 +159,8 @@ export default function TrainerDashboard() {
                       </div>
                     )}
 
-                    {/* Energy + Bloating */}
-                    <div className="flex gap-2 text-sm">
-                      {log.energy_level && (
-                        <span className="bg-gray-700 rounded-xl px-3 py-2 text-gray-300">
-                          Energy: <span className="text-white capitalize">{log.energy_level}</span>
-                        </span>
-                      )}
-                      {log.bloating !== null && (
-                        <span className="bg-gray-700 rounded-xl px-3 py-2 text-gray-300">
-                          Bloating: <span className="text-white">{log.bloating ? 'Yes' : 'No'}</span>
-                        </span>
-                      )}
-                    </div>
-
-                    {/* Flex meal */}
-                    {log.flex_meal && (
-                      <div className="bg-orange-900/30 border border-orange-800 rounded-xl p-3 text-sm">
-                        <p className="text-orange-400 text-xs mb-1">🍕 Flex Meal</p>
-                        <p className="text-white">{log.flex_meal}</p>
-                      </div>
-                    )}
+         
+         
 
                   </div>
                 )}

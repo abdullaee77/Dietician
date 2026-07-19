@@ -34,12 +34,9 @@ CREATE TABLE IF NOT EXISTS daily_logs (
   wake_time       VARCHAR(10),
   sleep_hours     NUMERIC(4,1),
 
-  -- Wellbeing
-  energy_level    VARCHAR(10),
-  bloating        BOOLEAN,
+
 
   -- Flex meal
-  flex_meal       TEXT,
 
   -- Completion flag
   completed       BOOLEAN DEFAULT FALSE,

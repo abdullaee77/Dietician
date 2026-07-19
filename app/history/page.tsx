@@ -48,31 +48,41 @@ export default function HistoryPage() {
   }
 
   function getLogForDay(day: number): any {
-    const date = new Date(historyMonth.getFullYear(), historyMonth.getMonth(), day)
-    const dateStr = date.toISOString().split('T')[0]
+    const year = historyMonth.getFullYear()
+    const month = String(historyMonth.getMonth() + 1).padStart(2, '0')
+    const dayStr = String(day).padStart(2, '0')
+    const dateStr = `${year}-${month}-${dayStr}`
+
     return historyData.logs?.find((l: any) => {
-      const logDate = new Date(l.date).toISOString().split('T')[0]
-      return logDate === dateStr
+      const logDate = new Date(l.date)
+      const lYear = logDate.getFullYear()
+      const lMonth = String(logDate.getMonth() + 1).padStart(2, '0')
+      const lDay = String(logDate.getDate()).padStart(2, '0')
+      return `${lYear}-${lMonth}-${lDay}` === dateStr
     }) ?? null
   }
 
   function getDayExercises(dateStr: string) {
-    return historyData.exerciseLogs?.filter((e: any) =>
-      new Date(e.date).toISOString().split('T')[0] === dateStr
-    ) ?? []
+    return historyData.exerciseLogs?.filter((e: any) => {
+      const d = new Date(e.date)
+      const str = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+      return str === dateStr
+    }) ?? []
   }
 
   function getDayFoods(dateStr: string) {
-    return historyData.foodLogs?.filter((f: any) =>
-      new Date(f.date).toISOString().split('T')[0] === dateStr
-    ) ?? []
+    return historyData.foodLogs?.filter((f: any) => {
+      const d = new Date(f.date)
+      const str = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+      return str === dateStr
+    }) ?? []
   }
 
   // Live Metrics Calculations from real historyData state
   const totalLogsCount = historyData.logs?.length || 0
   const completedLogsCount = historyData.logs?.filter((l: any) => l.completed).length || 0
   const adherenceRate = totalLogsCount > 0 ? Math.round((completedLogsCount / totalLogsCount) * 100) : 0
-  
+
   const totalStepsThisMonth = historyData.logs?.reduce((acc: number, curr: any) => acc + (curr.steps || 0), 0) || 0
   const maxStepsDay = historyData.logs?.reduce((max: number, curr: any) => (curr.steps > max ? curr.steps : max), 0) || 0
   const totalExercisesThisMonth = historyData.exerciseLogs?.length || 0
@@ -82,7 +92,7 @@ export default function HistoryPage() {
 
   return (
     <div className="min-h-screen bg-[#080808] text-zinc-100 pb-12 relative overflow-x-hidden">
-      
+
       {/* Decorative subtle background radial glow */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[500px] h-[500px] bg-rose-500/5 rounded-full blur-[120px] pointer-events-none" />
 
@@ -152,7 +162,7 @@ export default function HistoryPage() {
           </div>
 
           <div className="bg-zinc-950 border border-zinc-900 rounded-3xl p-5 shadow-xl relative">
-            
+
             {/* Month Selector */}
             <div className="flex items-center justify-between mb-5">
               <button
@@ -190,8 +200,8 @@ export default function HistoryPage() {
             {/* Weekday Grid Labels */}
             <div className="grid grid-cols-7 gap-1.5 mb-3">
               {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, index) => (
-                <div 
-                  key={index} 
+                <div
+                  key={index}
                   className="text-center text-[10px] text-zinc-600 font-black uppercase tracking-wider py-1"
                 >
                   {d}
@@ -275,7 +285,7 @@ export default function HistoryPage() {
         <div className="space-y-3">
           <h3 className="text-[11px] font-black tracking-widest text-zinc-500 uppercase px-1">Monthly Highlights</h3>
           <div className="bg-zinc-950 border border-zinc-900 rounded-3xl p-5 space-y-4">
-            
+
             {/* Steps Goal Highlight */}
             <div className="flex items-center gap-3.5">
               <div className="w-10 h-10 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center shrink-0">
@@ -289,7 +299,7 @@ export default function HistoryPage() {
               </div>
             </div>
 
-       
+
 
           </div>
         </div>
@@ -393,21 +403,12 @@ export default function HistoryPage() {
                 </div>
               </div>
 
-              {/* Flex meal */}
-              {selectedDay.flex_meal && (
-                <div>
-                  <p className="text-xs text-zinc-500 uppercase tracking-wider font-bold mb-3 flex items-center gap-1.5">
-                    <span>🍕</span> Flex Meal
-                  </p>
-                  <div className="bg-amber-950/20 border border-amber-900/30 rounded-xl px-4 py-3">
-                    <p className="text-amber-200/90 text-sm font-medium">{selectedDay.flex_meal}</p>
-                  </div>
-                </div>
-              )}
+
 
               {/* Exercise */}
               {(() => {
-                const dateStr = new Date(selectedDay.date).toISOString().split('T')[0]
+                const d = new Date(selectedDay.date)
+                const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
                 const exs = getDayExercises(dateStr)
                 if (exs.length === 0) return null
                 return (
@@ -424,11 +425,10 @@ export default function HistoryPage() {
                               <p className="text-zinc-500 text-xs truncate mt-0.5">{ex.exercise_desc}</p>
                             )}
                           </div>
-                          <span className={`shrink-0 text-xs font-black px-2.5 py-1 rounded-full ${
-                            ex.completed
-                              ? 'bg-green-500/10 text-green-400'
-                              : 'bg-red-500/10 text-red-400'
-                          }`}>
+                          <span className={`shrink-0 text-xs font-black px-2.5 py-1 rounded-full ${ex.completed
+                            ? 'bg-green-500/10 text-green-400'
+                            : 'bg-red-500/10 text-red-400'
+                            }`}>
                             {ex.completed ? '✓ Done' : '✕ Missed'}
                           </span>
                         </div>
@@ -440,7 +440,8 @@ export default function HistoryPage() {
 
               {/* Food check */}
               {(() => {
-                const dateStr = new Date(selectedDay.date).toISOString().split('T')[0]
+                const d = new Date(selectedDay.date)
+                const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
                 const foods = getDayFoods(dateStr)
                 if (foods.length === 0) return null
                 return (
@@ -457,11 +458,10 @@ export default function HistoryPage() {
                               {f.food_type === 'skip' ? '🚫 Skip Target' : '✅ Must Eat Target'}
                             </p>
                           </div>
-                          <span className={`shrink-0 text-xs font-black px-2.5 py-1 rounded-full ${
-                            f.complied
-                              ? 'bg-green-500/10 text-green-400'
-                              : 'bg-red-500/10 text-red-400'
-                          }`}>
+                          <span className={`shrink-0 text-xs font-black px-2.5 py-1 rounded-full ${f.complied
+                            ? 'bg-green-500/10 text-green-400'
+                            : 'bg-red-500/10 text-red-400'
+                            }`}>
                             {f.complied ? 'Complied' : 'Failed'}
                           </span>
                         </div>

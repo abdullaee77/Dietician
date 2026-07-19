@@ -21,8 +21,8 @@ interface DailyLog {
   water_glasses: number; steps: string
   exercise_desc: string; exercise_mins: string
   sleep_time: string; wake_time: string; sleep_hours: string
-  energy_level: string; bloating: boolean | null
-  flex_meal: string; completed: boolean
+ 
+  completed: boolean
 }
 
 const emptyLog: DailyLog = {
@@ -34,8 +34,8 @@ const emptyLog: DailyLog = {
   water_glasses: 0, steps: '',
   exercise_desc: '', exercise_mins: '',
   sleep_time: '', wake_time: '', sleep_hours: '',
-  energy_level: '', bloating: null,
-  flex_meal: '', completed: false,
+  
+ completed: false,
 }
 
 const inputCls = "w-full px-3 py-2 rounded-xl border border-zinc-700 bg-zinc-800 text-zinc-200 text-sm placeholder-zinc-600 focus:outline-none focus:ring-2 focus:ring-rose-500 transition"
@@ -140,7 +140,6 @@ export default function HomePage() {
             dinner_time: data.log.dinner_time ?? '',
             snack_food: data.log.snack_food ?? '',
             snack_time: data.log.snack_time ?? '',
-            flex_meal: data.log.flex_meal ?? '',
             sleep_time: data.log.sleep_time ?? '',
             wake_time: data.log.wake_time ?? '',
             exercise_desc: data.log.exercise_desc ?? '',
@@ -152,8 +151,7 @@ export default function HomePage() {
             breakfast_skipped: data.log.breakfast_skipped ?? false,
             lunch_skipped: data.log.lunch_skipped ?? false,
             dinner_skipped: data.log.dinner_skipped ?? false,
-            energy_level: data.log.energy_level ?? '',
-            bloating: data.log.bloating ?? null,
+           
           })
           setSteps(data.log.steps ? String(data.log.steps) : '')
         }
@@ -392,7 +390,6 @@ export default function HomePage() {
         {/* Quote */}
         {plan?.daily_quote && (
           <div className="bg-rose-500/10 border border-rose-500/20 rounded-2xl p-4 text-center">
-            <p className="text-xs text-rose-400 mb-1">Today's motivation</p>
             <p className="text-rose-300 font-medium italic">"{plan.daily_quote}"</p>
           </div>
         )}
@@ -437,10 +434,7 @@ export default function HomePage() {
             ))}
 
             <div className="flex gap-2">
-              <button onClick={addExtraMeal}
-                className="flex-1 py-3 rounded-2xl border border-dashed border-zinc-700 text-zinc-500 text-sm font-medium hover:border-rose-500/50 hover:text-rose-400 transition active:scale-95">
-                + Add Meal
-              </button>
+
               <button onClick={() => setLog(prev => ({
                 ...prev,
                 extra_meals: [...prev.extra_meals, {
@@ -455,8 +449,44 @@ export default function HomePage() {
           </div>
         </div>
 
+
+
         {/* Water */}
         <WaterTracker glasses={log.water_glasses} onChange={handleWaterChange} />
+
+        {/* Sleep */}
+        <div className="bg-zinc-900 rounded-2xl p-4 border border-zinc-800">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="font-semibold text-white">😴 Sleep</h3>
+            {plan?.sleep_hours && (
+              <span className="text-xs text-rose-400">Target: {plan.sleep_hours}h</span>
+            )}
+          </div>
+          <div className="grid grid-cols-2 gap-4 mb-3">
+            <SleepTimePicker
+              label="Slept at"
+              value={log.sleep_time}
+              onChange={v => {
+                const hours = calculateSleepHours(v, log.wake_time)
+                setLog(prev => ({ ...prev, sleep_time: v, sleep_hours: hours }))
+              }}
+            />
+            <SleepTimePicker
+              label="Woke at"
+              value={log.wake_time}
+              onChange={v => {
+                const hours = calculateSleepHours(log.sleep_time, v)
+                setLog(prev => ({ ...prev, wake_time: v, sleep_hours: hours }))
+              }}
+            />
+          </div>
+          {log.sleep_hours && (
+            <div className="bg-zinc-800 rounded-xl px-3 py-2.5 text-center">
+              <p className="text-zinc-400 text-xs">Total sleep</p>
+              <p className="text-white text-lg font-bold">{log.sleep_hours} hours</p>
+            </div>
+          )}
+        </div>
 
         {/* Steps */}
         <div className="bg-zinc-900 rounded-2xl p-4 border border-zinc-800">
@@ -512,39 +542,7 @@ export default function HomePage() {
           </div>
         )}
 
-        {/* Sleep */}
-        <div className="bg-zinc-900 rounded-2xl p-4 border border-zinc-800">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="font-semibold text-white">😴 Sleep</h3>
-            {plan?.sleep_hours && (
-              <span className="text-xs text-rose-400">Target: {plan.sleep_hours}h</span>
-            )}
-          </div>
-          <div className="grid grid-cols-2 gap-4 mb-3">
-            <SleepTimePicker
-              label="Slept at"
-              value={log.sleep_time}
-              onChange={v => {
-                const hours = calculateSleepHours(v, log.wake_time)
-                setLog(prev => ({ ...prev, sleep_time: v, sleep_hours: hours }))
-              }}
-            />
-            <SleepTimePicker
-              label="Woke at"
-              value={log.wake_time}
-              onChange={v => {
-                const hours = calculateSleepHours(log.sleep_time, v)
-                setLog(prev => ({ ...prev, wake_time: v, sleep_hours: hours }))
-              }}
-            />
-          </div>
-          {log.sleep_hours && (
-            <div className="bg-zinc-800 rounded-xl px-3 py-2.5 text-center">
-              <p className="text-zinc-400 text-xs">Total sleep</p>
-              <p className="text-white text-lg font-bold">{log.sleep_hours} hours</p>
-            </div>
-          )}
-        </div>
+
 
 
 
